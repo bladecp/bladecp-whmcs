@@ -26,10 +26,8 @@ final class WebhooksView
         string $success = ''
     ): string {
         $h = Layout::header(
-            'Conectar webhooks',
-            'Registra este WHMCS para receber eventos de provisão da '
-                . 'BladeCP (suspensão / reativação / cancelamento) e '
-                . 'refletir o status do serviço automaticamente.'
+            I18n::t('webhooks.header.title'),
+            I18n::t('webhooks.header.description')
         );
 
         $serverOk = ServerConfig::params() !== null;
@@ -62,59 +60,55 @@ final class WebhooksView
         if (isset($_GET['replayed'])) {
             $flash .= !empty($_GET['replayed'])
                 ? '<div class="bcp-flash bcp-flash-ok">'
-                    . Layout::icon('check') . '<div>Reenvio solicitado. Uma nova '
-                    . 'entrega foi criada com o mesmo identificador do evento.'
+                    . Layout::icon('check') . '<div>'
+                    . Layout::escape(I18n::t('webhooks.flash.replayRequested'))
                     . '</div></div>'
                 : '<div class="bcp-flash bcp-flash-no"><span class="bcp-pf-x">'
                     . '!</span><div>' . Layout::escape((string) ($_GET['replay_error']
-                        ?? 'Não foi possível reenviar a entrega.'))
+                        ?? I18n::t('webhooks.flash.replayFailed')))
                     . '</div></div>';
         }
         if ($success !== '') {
             $flash .= '<div class="bcp-flash bcp-flash-ok">' . Layout::icon('check')
-                . '<div><strong>' . Layout::escape($success) . '</strong> O segredo '
-                . 'foi protegido e permanece disponível somente para o '
-                . 'receiver deste servidor.</div></div>';
+                . '<div><strong>' . Layout::escape($success) . '</strong> '
+                . Layout::escape(I18n::t('webhooks.flash.successDetail')) . '</div></div>';
         }
         if ($legacyPlaintext) {
             $flash .= '<div class="bcp-flash bcp-flash-warn"><div><strong>'
-                . 'Migração de segurança necessária.</strong> Foi detectada '
-                . 'uma configuração antiga em texto simples. Ela não está '
-                . 'ativa. Reconecte ou rotacione os webhooks para substituí-la '
-                . 'por um segredo protegido.</div></div>';
+                . Layout::escape(I18n::t('webhooks.flash.legacyTitle')) . '</strong> '
+                . Layout::escape(I18n::t('webhooks.flash.legacyDetail')) . '</div></div>';
         }
         if ($source === 'reconnect') {
             $flash .= '<div class="bcp-flash bcp-flash-warn"><div><strong>'
-                . 'Reconexão necessária.</strong> Uma operação anterior não '
-                . 'pôde confirmar o estado remoto com segurança. O receiver '
-                . 'permanece inativo até uma nova conexão.</div></div>';
+                . Layout::escape(I18n::t('webhooks.flash.reconnectTitle')) . '</strong> '
+                . Layout::escape(I18n::t('webhooks.flash.reconnectDetail')) . '</div></div>';
         }
 
         $srcLabel = [
-            'stored' => 'gravado neste WHMCS',
-            'constant' => 'constante configuration.php',
-            'env' => 'variável de ambiente',
-            'legacy' => 'migração necessária',
-            'reconnect' => 'reconexão necessária',
+            'stored' => I18n::t('webhooks.source.stored'),
+            'constant' => I18n::t('webhooks.source.constant'),
+            'env' => I18n::t('webhooks.source.env'),
+            'legacy' => I18n::t('webhooks.source.legacy'),
+            'reconnect' => I18n::t('webhooks.source.reconnect'),
         ][$source] ?? '';
-        $status = '<div class="bcp-sec">Situação</div>'
-            . self::whRow('Servidor BladeCP', $serverOk
-                ? '<span class="bcp-pill on">conectado</span>'
-                : '<span class="bcp-pill off">não configurado</span>')
-            . self::whRow('Segredo de assinatura', in_array(
+        $status = '<div class="bcp-sec">' . Layout::escape(I18n::t('webhooks.status.title')) . '</div>'
+            . self::whRow(I18n::t('webhooks.status.server'), $serverOk
+                ? '<span class="bcp-pill on">' . Layout::escape(I18n::t('webhooks.status.connected')) . '</span>'
+                : '<span class="bcp-pill off">' . Layout::escape(I18n::t('webhooks.status.notConfigured')) . '</span>')
+            . self::whRow(I18n::t('webhooks.status.secret'), in_array(
                 $source,
                 ['legacy', 'reconnect'],
                 true
             )
-                ? '<span class="bcp-pill off">inativo, '
+                ? '<span class="bcp-pill off">' . Layout::escape(I18n::t('webhooks.status.inactive')) . ', '
                     . Layout::escape($srcLabel) . '</span>'
                 : ($hasSecret
-                ? '<span class="bcp-pill on">configurado ('
+                ? '<span class="bcp-pill on">' . Layout::escape(I18n::t('webhooks.status.configured')) . ' ('
                     . Layout::escape($srcLabel) . ')</span>'
-                : '<span class="bcp-pill off">ausente</span>'))
+                : '<span class="bcp-pill off">' . Layout::escape(I18n::t('webhooks.status.missing')) . '</span>'))
             . ($endpointId !== ''
                 ? self::whRow(
-                    'Endpoint registrado',
+                    I18n::t('webhooks.status.endpoint'),
                     '<span class="bcp-csub" style="text-align:left">'
                     . Layout::escape($endpointId) . '</span>'
                 )
@@ -124,7 +118,7 @@ final class WebhooksView
         foreach (WebhookConfig::EVENTS as $ev) {
             $evChips .= '<span class="bcp-pill">' . Layout::escape($ev) . '</span> ';
         }
-        $events = '<div class="bcp-sec">Eventos assinados</div>'
+        $events = '<div class="bcp-sec">' . Layout::escape(I18n::t('webhooks.events.title')) . '</div>'
             . '<p class="bcp-row-v" style="text-align:left">' . $evChips
             . '</p>';
 
@@ -132,43 +126,35 @@ final class WebhooksView
             . Layout::token()
             . '<input type="hidden" name="action" value="webhook-connect">'
             . '<div class="bcp-fg"><label class="bcp-fg-l" for="bcp-webhook-url">'
-            . 'URL pública do receiver</label><div class="bcp-fg-c">'
+            . Layout::escape(I18n::t('webhooks.form.urlLabel')) . '</label><div class="bcp-fg-c">'
             . '<input id="bcp-webhook-url" type="url" name="url" value="' . Layout::escape($url) . '" '
             . 'placeholder="https://seu-whmcs/modules/addons/bladecp/webhook.php" '
             . 'class="bcp-setup-input" style="max-width:520px"></div>'
-            . '<small class="bcp-fg-d">Detectada do System URL do WHMCS. '
-            . 'Ajuste se o WHMCS estiver atrás de proxy/domínio diferente. '
-            . 'Precisa ser acessível pela BladeCP via HTTPS. Para testes '
-            . 'locais, use um túnel HTTPS e informe aqui a URL pública '
-            . 'terminada em /modules/addons/bladecp/webhook.php.</small></div>'
+            . '<small class="bcp-fg-d">' . Layout::escape(I18n::t('webhooks.form.urlHint')) . '</small></div>'
             . '<div class="bcp-actions"><button class="btn btn-primary" '
             . 'type="submit"' . ($serverOk ? '' : ' disabled') . '>'
             . Layout::icon('webhook')
-            . ($hasSecret ? 'Reconectar webhooks' : 'Conectar webhooks')
+            . Layout::escape(I18n::t($hasSecret ? 'webhooks.actions.reconnect' : 'webhooks.actions.connect'))
             . '</button>'
             . ($endpointId !== '' ? AdminPage::postBtn(
                 $base,
                 'webhook-rotate',
                 [],
-                'Rotacionar segredo',
-                'Rotacionar o segredo do webhook? A operação só será concluída '
-                    . 'quando o novo valor estiver protegido neste WHMCS.',
+                I18n::t('webhooks.actions.rotate'),
+                I18n::t('webhooks.actions.rotateConfirm'),
                 'refresh'
             ) : '')
             . '</div></form>';
 
         if (!$serverOk) {
-            $form = '<p class="bcp-row-v">Conecte sua API key primeiro na '
-                . 'aba <a href="' . Layout::escape($base) . '&action=setup">'
-                . 'Configuração rápida</a> — o registro do webhook usa a sua '
-                . 'credencial BladeCP.</p>' . $form;
+            $form = '<p class="bcp-row-v">' . Layout::escape(I18n::t('webhooks.form.serverRequiredPrefix')) . ' '
+                . '<a href="' . Layout::escape($base) . '&action=setup">'
+                . Layout::escape(I18n::t('webhooks.form.setupLink')) . '</a>. '
+                . Layout::escape(I18n::t('webhooks.form.serverRequiredSuffix')) . '</p>' . $form;
         }
 
-        $note = '<div class="bcp-chips-note">"Conectar" registra este '
-            . 'endpoint na BladeCP com a sua API key e guarda o segredo de '
-            . 'assinatura protegido aqui mesmo. O <code>webhook.php</code> '
-            . 'o lê automaticamente, sem cópia manual e sem exibição na '
-            . 'interface. Use "Rotacionar" para substituir o valor. Nada é logado.'
+        $note = '<div class="bcp-chips-note">' . Layout::escape(I18n::t('webhooks.note.before'))
+            . ' <code>webhook.php</code> ' . Layout::escape(I18n::t('webhooks.note.after'))
             . '</div>';
         $diagnostics = self::webhookDeliveriesBlock(
             $base,
@@ -198,12 +184,12 @@ final class WebhooksView
         ?array $data,
         string $selectedStatus
     ): string {
-        $sec = '<div class="bcp-sec">Diagnóstico de entregas</div>';
+        $sec = '<div class="bcp-sec">' . Layout::escape(I18n::t('webhooks.deliveries.title')) . '</div>';
         if ($endpointUuid === '') {
-            return $sec . '<p class="bcp-row-v muted">Conecte o endpoint para '
-                . 'consultar entregas e reenviar falhas.</p>';
+            return $sec . '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('webhooks.deliveries.endpointRequired')) . '</p>';
         }
-        $options = '<option value="">Todos os estados</option>';
+        $options = '<option value="">' . Layout::escape(I18n::t('webhooks.deliveries.allStatuses')) . '</option>';
         foreach (WebhookDiagnostics::STATUSES as $status) {
             $options .= '<option value="' . Layout::escape($status) . '"'
                 . ($selectedStatus === $status ? ' selected' : '') . '>'
@@ -213,19 +199,22 @@ final class WebhooksView
             . '" class="bcp-actions">'
             . '<input type="hidden" name="module" value="bladecp">'
             . '<input type="hidden" name="action" value="webhooks">'
-            . '<label class="sr-only" for="bcp-delivery-status">Filtrar entregas por estado</label>'
+            . '<label class="sr-only" for="bcp-delivery-status">'
+            . Layout::escape(I18n::t('webhooks.deliveries.filterLabel')) . '</label>'
             . '<select id="bcp-delivery-status" name="delivery_status" class="form-control" '
             . 'style="max-width:220px">' . $options . '</select>'
-            . '<button class="btn btn-default" type="submit">Filtrar</button>'
+            . '<button class="btn btn-default" type="submit">'
+            . Layout::escape(I18n::t('webhooks.actions.filter')) . '</button>'
             . '</form>';
         if ($data === null) {
-            return $sec . $filter . '<p class="bcp-row-v muted">Não foi '
-                . 'possível carregar o diagnóstico. Confirme os escopos '
-                . '<code>webhooks:read</code> da API key.</p>';
+            return $sec . $filter . '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('webhooks.deliveries.unavailableBefore'))
+                . ' <code>webhooks:read</code> '
+                . Layout::escape(I18n::t('webhooks.deliveries.unavailableAfter')) . '</p>';
         }
         if ($data['items'] === []) {
-            return $sec . $filter . '<p class="bcp-row-v muted">Nenhuma '
-                . 'entrega neste filtro.</p>';
+            return $sec . $filter . '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('webhooks.deliveries.empty')) . '</p>';
         }
 
         $rows = '';
@@ -237,7 +226,7 @@ final class WebhooksView
                 $action = '<form method="post" action="' . Layout::escape($base)
                     . '" style="display:inline" onsubmit="return confirm('
                     . Layout::escape(json_encode(
-                        'Reenviar esta entrega? Uma nova tentativa será criada.',
+                        I18n::t('webhooks.actions.replayConfirm'),
                         JSON_THROW_ON_ERROR
                     ))
                     . ')">' . Layout::token()
@@ -245,7 +234,7 @@ final class WebhooksView
                     . '<input type="hidden" name="delivery_uuid" value="'
                     . Layout::escape($deliveryUuid) . '">'
                     . '<button class="btn btn-default" type="submit">'
-                    . Layout::icon('refresh') . 'Reenviar</button></form>';
+                    . Layout::icon('refresh') . Layout::escape(I18n::t('webhooks.actions.replay')) . '</button></form>';
             }
             $error = trim((string) ($delivery['lastError'] ?? ''));
             $responseCode = $delivery['responseCode'] ?? null;
@@ -262,9 +251,13 @@ final class WebhooksView
                 . Layout::escape((string) ($delivery['updatedAt'] ?? '')) . '</td>'
                 . '<td>' . $action . '</td></tr>';
         }
-        $table = '<div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">Evento</th>'
-            . '<th scope="col">Status</th><th scope="col">Tentativa</th><th scope="col">Resposta</th>'
-            . '<th scope="col">Atualizado em</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead><tbody>'
+        $table = '<div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">'
+            . Layout::escape(I18n::t('webhooks.table.event')) . '</th>'
+            . '<th scope="col">' . Layout::escape(I18n::t('webhooks.table.status')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('webhooks.table.attempt')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('webhooks.table.response')) . '</th>'
+            . '<th scope="col">' . Layout::escape(I18n::t('webhooks.table.updatedAt')) . '</th><th scope="col"><span class="sr-only">'
+            . Layout::escape(I18n::t('webhooks.table.actions')) . '</span></th></tr></thead><tbody>'
             . $rows . '</tbody></table></div>';
 
         $page = max(1, (int) ($data['page'] ?? 1));
@@ -278,29 +271,36 @@ final class WebhooksView
         };
         $pager = $pages > 1
             ? '<div class="bcp-actions bcp-mkt-pager"><span class="bcp-row-v">'
-                . 'Página ' . $page . ' de ' . $pages . ' · ' . $total
-                . ' entrega(s)</span>'
+                . Layout::escape(I18n::t('webhooks.pager.summary', ['page' => $page, 'pages' => $pages, 'total' => $total]))
+                . '</span>'
                 . ($page > 1 ? '<a class="btn btn-default" href="'
-                    . Layout::escape($url($page - 1)) . '">Anterior</a>' : '')
+                    . Layout::escape($url($page - 1)) . '">' . Layout::escape(I18n::t('webhooks.pager.previous')) . '</a>' : '')
                 . ($page < $pages ? '<a class="btn btn-default" href="'
-                    . Layout::escape($url($page + 1)) . '">Próxima</a>' : '')
+                    . Layout::escape($url($page + 1)) . '">' . Layout::escape(I18n::t('webhooks.pager.next')) . '</a>' : '')
                 . '</div>'
             : '';
         return $sec . $filter . $table . $pager
-            . '<p class="bcp-chips-note">A lista não contém payload nem '
-            . 'segredo. O replay cria uma nova delivery, preservando o '
-            . 'identificador do evento para deduplicação.</p>';
+            . '<p class="bcp-chips-note">'
+            . Layout::escape(I18n::t('webhooks.deliveries.note')) . '</p>';
     }
 
     public static function webhookStatusBadge(string $status): string
     {
         return match ($status) {
-            'succeeded' => '<span class="bcp-badge is-ok">succeeded</span>',
+            'succeeded' => '<span class="bcp-badge is-ok">' . Layout::escape(I18n::t('webhooks.deliveryStatus.succeeded')) . '</span>',
             'failed', 'dead' => '<span class="bcp-badge is-err">'
-                . Layout::escape($status) . '</span>',
+                . Layout::escape(self::statusLabel($status)) . '</span>',
             'pending', 'delivering' => '<span class="bcp-badge is-warn">'
-                . Layout::escape($status) . '</span>',
-            default => '<span class="bcp-pill">' . Layout::escape($status) . '</span>',
+                . Layout::escape(self::statusLabel($status)) . '</span>',
+            default => '<span class="bcp-pill">' . Layout::escape(self::statusLabel($status)) . '</span>',
+        };
+    }
+
+    private static function statusLabel(string $status): string
+    {
+        return match ($status) {
+            'succeeded', 'failed', 'dead', 'pending', 'delivering' => I18n::t('webhooks.deliveryStatus.' . $status),
+            default => $status,
         };
     }
 

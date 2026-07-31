@@ -7,9 +7,9 @@ publish it.
 ## The three steps
 
 ```sh
-./scripts/public-release.sh prepare 0.9.0-rc.3
-./scripts/public-release.sh stage-github 0.9.0-rc.3
-./scripts/public-release.sh publish 0.9.0-rc.3 --confirm-publication v0.9.0-rc.3
+./scripts/public-release.sh prepare 0.9.0-rc.4
+./scripts/public-release.sh stage-github 0.9.0-rc.4 --public-base <clean-public-main-checkout>
+./scripts/public-release.sh publish 0.9.0-rc.4 --confirm-publication v0.9.0-rc.4
 ```
 
 `prepare` runs the release gates and creates the reviewed artifact directory.
@@ -19,9 +19,9 @@ publishes files.
 
 `publish` is intentionally separate. It requires the exact version confirmation and an additional maintainer-controlled safety lock. It validates the staged commit, tag, checksum and approved GitHub destination before it can perform an external write. It never force-pushes.
 
-For the first public release, publish `v0.9.0-rc.3` as a pre-release. Do not
-describe it as a stable version until it has completed the planned partner
-validation period.
+Publish `v0.9.0-rc.4` as a pre-release based on the existing public `main`
+history. Do not describe it as a stable version until the planned partner
+validation period is complete.
 
 ## What is released
 
@@ -34,11 +34,21 @@ Every public release includes:
 - a curated public source tree;
 - public documentation, templates and tested automation.
 
-The released ZIP is validated from the artifact itself in non-production WHMCS
-installations. For `v0.9.0-rc.3`, validate it with WHMCS 8.13.3 and WHMCS
+The released ZIP is validated from the artifact itself in disposable WHMCS
+installations. For `v0.9.0-rc.4`, validate it with WHMCS 8.13.3 and WHMCS
 9.0.6. Source-tree tests are useful, but they do not replace this
-artifact-only validation. When a release changes client-facing UI, review the
-English, Portuguese (Brazil), and Spanish views from the generated artifact.
+artifact-only validation.
+
+When a release changes client-facing UI, refresh all three localized README
+sets: English, Portuguese (Brazil) and Spanish. Each set must include overview,
+configuration, plans, pricing, marketplace, operations and diagnostics, and
+the client-service view. Capture the full WHMCS UI and the BladeCP addon in the
+same language. Public documentation and captures must use `api.bladecp.com`
+only, neutral data such as `example.com`, and no real people, organizations,
+domains, customer records, credentials or operational identifiers.
+The client-service capture must come from a dedicated neutral demonstration
+service whose domain is `example.com` in both WHMCS and BladeCP. Do not alter a
+bitmap or replace rendered DOM text to simulate localization or sanitized data.
 
 ## Safety checks
 
@@ -49,7 +59,7 @@ deterministic and produces an audit record. Review the installable ZIP,
 checksum, release notes, documentation, screenshots and public source tree
 before authorizing publication.
 
-Automated checks cannot judge every security or editorial concern. The first public release and material changes receive an independent human review of code, documentation, screenshots, manifest and release assets.
+Automated checks cannot judge every security or editorial concern. The first public release and material changes receive an independent human review of code, documentation, screenshots, manifest and release assets. Screenshot review at original resolution is mandatory. It verifies the complete language coherence of WHMCS and addon chrome, approved API host, neutral data and absence of personal or third-party information. Public images must be re-encoded without EXIF, XMP, IPTC, comments or application-specific metadata. OCR is advisory only and is not an automated release gate.
 
 ## History policy
 

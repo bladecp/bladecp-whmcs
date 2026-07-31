@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace WHMCS\Module\Addon\Bladecp;
 
+use WHMCS\Module\Addon\Bladecp\Admin\I18n;
 use WHMCS\Module\Server\Bladecp\Helpers\AdminServerContext;
 use WHMCS\Module\Server\Bladecp\Helpers\ServerConfig;
 
@@ -33,9 +34,9 @@ final class IntegrationReadiness
             'catalog' => $catalog,
             'ready' => $ready,
             'steps' => [
-                ['key' => 'server', 'ready' => $configured, 'label' => 'Servidor BladeCP conectado'],
-                ['key' => 'catalog', 'ready' => $products > 0, 'label' => 'Catálogo importado'],
-                ['key' => 'availability', 'ready' => $catalog['total'] > 0 && $catalog['blocked'] === 0, 'label' => 'Disponibilidade confirmada'],
+                ['key' => 'server', 'ready' => $configured, 'label' => I18n::t('viewmodels.readiness.steps.serverConnected')],
+                ['key' => 'catalog', 'ready' => $products > 0, 'label' => I18n::t('viewmodels.readiness.steps.catalogImported')],
+                ['key' => 'availability', 'ready' => $catalog['total'] > 0 && $catalog['blocked'] === 0, 'label' => I18n::t('viewmodels.readiness.steps.availabilityConfirmed')],
             ],
         ];
     }
@@ -158,9 +159,9 @@ final class IntegrationReadiness
             'ready' => false,
             'unknown' => true,
             'steps' => [
-                ['key' => 'server', 'ready' => false, 'label' => 'Servidor BladeCP não selecionado'],
-                ['key' => 'catalog', 'ready' => false, 'label' => 'Catálogo sem contexto de servidor'],
-                ['key' => 'availability', 'ready' => false, 'label' => 'Disponibilidade não confirmada'],
+                ['key' => 'server', 'ready' => false, 'label' => I18n::t('viewmodels.readiness.steps.serverNotSelected')],
+                ['key' => 'catalog', 'ready' => false, 'label' => I18n::t('viewmodels.readiness.steps.catalogWithoutServer')],
+                ['key' => 'availability', 'ready' => false, 'label' => I18n::t('viewmodels.readiness.steps.availabilityNotConfirmed')],
             ],
         ];
     }

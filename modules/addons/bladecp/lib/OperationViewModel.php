@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace WHMCS\Module\Addon\Bladecp;
 
+use WHMCS\Module\Addon\Bladecp\Admin\I18n;
+
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
 }
@@ -20,16 +22,16 @@ final class OperationViewModel
         $data = Operation::load($filters);
         $summary = is_array($data['summary'] ?? null) ? $data['summary'] : [];
         $data['cards'] = [
-            self::card('Serviços BladeCP', (int) ($summary['total'] ?? 0), 'total'),
-            self::card('Ativos', (int) ($summary['active'] ?? 0), 'healthy'),
-            self::card('Pendentes', (int) ($summary['pending'] ?? 0), 'attention'),
-            self::card('Exigem atenção', (int) ($summary['attention'] ?? 0), 'attention'),
+            self::card(I18n::t('viewmodels.operation.cards.services'), (int) ($summary['total'] ?? 0), 'total'),
+            self::card(I18n::t('viewmodels.operation.cards.active'), (int) ($summary['active'] ?? 0), 'healthy'),
+            self::card(I18n::t('viewmodels.operation.cards.pending'), (int) ($summary['pending'] ?? 0), 'attention'),
+            self::card(I18n::t('viewmodels.operation.cards.attention'), (int) ($summary['attention'] ?? 0), 'attention'),
         ];
         $data['emptyState'] = [
-            'services' => 'Nenhum serviço BladeCP foi encontrado com estes filtros.',
-            'failures' => 'Não há falhas recentes disponíveis no log do módulo.',
-            'webhooks' => 'Ainda não há eventos recebidos pelo receiver local.',
-            'synchronizations' => 'Não há sincronizações recentes disponíveis no log do módulo.',
+            'services' => I18n::t('viewmodels.operation.empty.services'),
+            'failures' => I18n::t('viewmodels.operation.empty.failures'),
+            'webhooks' => I18n::t('viewmodels.operation.empty.webhooks'),
+            'synchronizations' => I18n::t('viewmodels.operation.empty.synchronizations'),
         ];
         return $data;
     }
@@ -38,7 +40,7 @@ final class OperationViewModel
     public static function timeline(int $serviceId, int $limit = 25): array
     {
         $data = Timeline::forService($serviceId, $limit);
-        $data['emptyState'] = 'Não há eventos correlacionáveis no log do módulo para este serviço.';
+        $data['emptyState'] = I18n::t('viewmodels.operation.empty.timeline');
         return $data;
     }
 

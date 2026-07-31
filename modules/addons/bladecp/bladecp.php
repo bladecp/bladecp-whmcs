@@ -26,6 +26,7 @@ require_once __DIR__ . '/../../servers/bladecp/bootstrap.php';
 );
 
 use WHMCS\Module\Addon\Bladecp\AdminPage;
+use WHMCS\Module\Addon\Bladecp\Admin\I18n;
 use WHMCS\Module\Addon\Bladecp\CatalogStateRepository;
 use WHMCS\Module\Addon\Bladecp\Combos;
 use WHMCS\Module\Addon\Bladecp\OptionGroupsMap;
@@ -40,7 +41,7 @@ function bladecp_config(): array
             . 'Configurable Options no order form. Não armazena '
             . 'credenciais — a API key fica no Server record '
             . '(Setup → Products/Services → Servers).',
-        'version' => '0.9.0-rc.3',
+        'version' => '0.9.0-rc.4',
         'author' => 'BladeCP',
         'language' => 'english',
         'fields' => [],
@@ -99,6 +100,7 @@ function bladecp_deactivate(): array
 function bladecp_output(array $vars): void
 {
     try {
+        I18n::boot(is_array($vars['_lang'] ?? null) ? $vars['_lang'] : []);
         echo AdminPage::render($vars);
     } catch (\Throwable $e) {
         try {

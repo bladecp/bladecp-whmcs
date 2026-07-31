@@ -3,17 +3,18 @@
 ## Create the server record
 
 In WHMCS, open **Setup > Products/Services > Servers** and add a new server
-using the `bladecp` module. Configure the connection as follows:
+using the `bladecp` module. Configure the production connection as follows:
 
-| Field | Production | Sandbox |
-| --- | --- | --- |
-| Hostname | `api.bladecp.com` | `api.bladecp.cloud` |
-| Secure | Enabled | Enabled |
-| Access Hash | BladeCP API key | BladeCP API key |
+| Field | Value |
+| --- | --- |
+| Hostname | `api.bladecp.com` |
+| Secure | Enabled |
+| Access Hash | BladeCP API key |
 
 Enter the API key in **Access Hash**, not in a product field or addon setting.
-Use the public host for the intended environment. An empty hostname defaults
-to production, so enter the sandbox hostname explicitly when using sandbox.
+Use `api.bladecp.com` as the public production host. An empty hostname also
+defaults to production, but explicitly configuring the hostname is clearer and
+recommended.
 
 Save the server and use WHMCS's connection test before assigning it to
 products.

@@ -24,7 +24,7 @@ final class Client
     /** Margem pequena para drenar handles multi sem estender indefinidamente. */
     private const MULTI_DEADLINE_SECONDS = self::TIMEOUT + 5;
     private const MAX_PARALLEL_REQUESTS = 8;
-    private const VERSION = '0.9.0-rc.3';
+    private const VERSION = '0.9.0-rc.4';
 
     private Endpoints $endpoints;
 

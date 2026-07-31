@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace WHMCS\Module\Addon\Bladecp;
 
+use WHMCS\Module\Addon\Bladecp\Admin\I18n;
 use WHMCS\Module\Server\Bladecp\Helpers\AdminServerContext;
 use WHMCS\Module\Server\Bladecp\Helpers\ServerConfig;
 
@@ -234,12 +235,12 @@ final class WebhookConfig
             return [
                 'state' => 'blocked',
                 'environment' => 'unknown',
-                'detail' => 'O System URL do WHMCS não está configurado.',
-                'action' => 'Configure o System URL ou informe a URL pública do receiver.',
+                'detail' => I18n::t('viewmodels.webhookConfig.systemUrlMissingDetail'),
+                'action' => I18n::t('viewmodels.webhookConfig.systemUrlMissingAction'),
             ];
         }
         if (strlen($url) > 2048 || preg_match('/\s/', $url) === 1) {
-            return self::blockedUrl('A URL do receiver não é válida.');
+            return self::blockedUrl(I18n::t('viewmodels.webhookConfig.invalidUrlDetail'));
         }
         $parts = @parse_url($url);
         $scheme = is_array($parts) ? strtolower((string) ($parts['scheme'] ?? '')) : '';
@@ -253,42 +254,42 @@ final class WebhookConfig
             || isset($parts['pass'])
             || isset($parts['fragment'])
         ) {
-            return self::blockedUrl('A URL do receiver não é uma URL HTTP válida.');
+            return self::blockedUrl(I18n::t('viewmodels.webhookConfig.invalidHttpUrlDetail'));
         }
         if (self::isLocalHost($host)) {
             return [
                 'state' => 'local',
                 'environment' => 'local',
-                'detail' => 'Este é um ambiente local. A plataforma não consegue chamar este endereço diretamente.',
-                'action' => 'Para testar webhooks localmente, use um túnel HTTPS público. Em produção, use uma URL HTTPS pública.',
+                'detail' => I18n::t('viewmodels.webhookConfig.localEnvironmentDetail'),
+                'action' => I18n::t('viewmodels.webhookConfig.localEnvironmentAction'),
             ];
         }
         if ($scheme !== 'https') {
             return self::blockedUrl(
-                'A URL pública do receiver não usa HTTPS.',
-                'Publique o WHMCS com HTTPS e use essa URL antes de conectar os webhooks.'
+                I18n::t('viewmodels.webhookConfig.httpsRequiredDetail'),
+                I18n::t('viewmodels.webhookConfig.httpsRequiredAction')
             );
         }
         if (!self::isReceiverPath((string) ($parts['path'] ?? ''))) {
-            return self::blockedUrl('A URL não aponta para o receiver do módulo.');
+            return self::blockedUrl(I18n::t('viewmodels.webhookConfig.receiverPathInvalidDetail'));
         }
         $hostStatus = self::publicHostStatus($host);
         if ($hostStatus === 'local') {
             return [
                 'state' => 'local',
                 'environment' => 'local',
-                'detail' => 'O receiver resolve para uma rede local ou reservada.',
-                'action' => 'Para testar webhooks localmente, use um túnel HTTPS público. Em produção, use uma URL HTTPS pública.',
+                'detail' => I18n::t('viewmodels.webhookConfig.localNetworkDetail'),
+                'action' => I18n::t('viewmodels.webhookConfig.localEnvironmentAction'),
             ];
         }
         if ($hostStatus !== 'public') {
-            return self::blockedUrl('Não foi possível validar o host do receiver como público e seguro.');
+            return self::blockedUrl(I18n::t('viewmodels.webhookConfig.publicHostInvalidDetail'));
         }
         return [
             'state' => 'ok',
             'environment' => 'public',
-            'detail' => 'A URL parece pública e usa HTTPS.',
-            'action' => 'Confirme que o caminho pode receber chamadas externas.',
+            'detail' => I18n::t('viewmodels.webhookConfig.publicUrlOkDetail'),
+            'action' => I18n::t('viewmodels.webhookConfig.publicUrlOkAction'),
         ];
     }
 
@@ -327,7 +328,7 @@ final class WebhookConfig
         if ($serverId <= 0) {
             return [
                 'ok' => false,
-                'error' => 'Selecione uma conta BladeCP válida para as operações administrativas.',
+                'error' => I18n::t('viewmodels.webhookConfig.errors.selectAccount'),
             ];
         }
         $url = trim($url);
@@ -338,34 +339,33 @@ final class WebhookConfig
         if ($classification['state'] !== 'ok') {
             return [
                 'ok' => false,
-                'error' => 'A URL do receiver precisa ser HTTPS pública, segura e acessível externamente.',
+                'error' => I18n::t('viewmodels.webhookConfig.errors.receiverMustBePublic'),
             ];
         }
         $url = self::urlForServer($url, $serverId);
         if ($url === '') {
             return [
                 'ok' => false,
-                'error' => 'Não foi possível preparar a URL segura do receiver.',
+                'error' => I18n::t('viewmodels.webhookConfig.errors.prepareUrl'),
             ];
         }
         if (!self::canEncrypt()) {
             return [
                 'ok' => false,
-                'error' => 'A criptografia do WHMCS não está disponível. Nenhuma configuração foi alterada.',
+                'error' => I18n::t('viewmodels.webhookConfig.errors.encryptionUnavailableNew'),
             ];
         }
         if (!self::canPersistSettings($serverId)) {
             return [
                 'ok' => false,
-                'error' => 'O WHMCS não conseguiu validar a persistência segura. Nenhuma configuração foi alterada.',
+                'error' => I18n::t('viewmodels.webhookConfig.errors.persistenceUnavailableNew'),
             ];
         }
         $client = self::client($serverId);
         if ($client === null) {
             return [
                 'ok' => false,
-                'error' => 'Servidor BladeCP não configurado. Conecte sua '
-                    . 'API key primeiro (aba Configuração rápida).',
+                'error' => I18n::t('viewmodels.webhookConfig.errors.serverNotConfiguredConnect'),
             ];
         }
         try {
@@ -376,7 +376,7 @@ final class WebhookConfig
         } catch (\Throwable) {
             return [
                 'ok' => false,
-                'error' => 'Não foi possível registrar o endpoint agora. Tente novamente mais tarde.',
+                'error' => I18n::t('viewmodels.webhookConfig.errors.registerEndpoint'),
             ];
         }
         $uuid = self::extractEndpointUuid($resp);
@@ -387,7 +387,7 @@ final class WebhookConfig
             }
             return [
                 'ok' => false,
-                'error' => 'A resposta do endpoint não pôde ser validada. A configuração anterior foi preservada.',
+                'error' => I18n::t('viewmodels.webhookConfig.errors.endpointResponseInvalid'),
             ];
         }
         $encryptedSecret = self::encrypt($secret);
@@ -403,8 +403,8 @@ final class WebhookConfig
             return [
                 'ok' => false,
                 'error' => $compensated
-                    ? 'A configuração segura não pôde ser salva. O registro remoto foi desfeito e a configuração anterior foi preservada.'
-                    : 'A configuração segura não pôde ser salva. A configuração anterior foi preservada; revise os endpoints remotos antes de tentar novamente.',
+                    ? I18n::t('viewmodels.webhookConfig.errors.saveCompensated')
+                    : I18n::t('viewmodels.webhookConfig.errors.saveUncompensated'),
             ];
         }
         return ['ok' => true, 'error' => ''];
@@ -421,34 +421,33 @@ final class WebhookConfig
         if ($serverId <= 0) {
             return [
                 'ok' => false,
-                'error' => 'Selecione uma conta BladeCP válida para as operações administrativas.',
+                'error' => I18n::t('viewmodels.webhookConfig.errors.selectAccount'),
             ];
         }
         $id = self::getEndpointId($serverId);
         if ($id === '') {
             return [
                 'ok' => false,
-                'error' => 'Nenhum endpoint registrado para rotacionar. '
-                    . 'Use "Conectar webhooks" primeiro.',
+                'error' => I18n::t('viewmodels.webhookConfig.errors.noEndpointToRotate'),
             ];
         }
         $client = self::client($serverId);
         if ($client === null) {
             return [
                 'ok' => false,
-                'error' => 'Servidor BladeCP não configurado.',
+                'error' => I18n::t('viewmodels.webhookConfig.errors.serverNotConfigured'),
             ];
         }
         if (!self::canEncrypt()) {
             return [
                 'ok' => false,
-                'error' => 'A criptografia do WHMCS não está disponível. A configuração atual foi preservada.',
+                'error' => I18n::t('viewmodels.webhookConfig.errors.encryptionUnavailableCurrent'),
             ];
         }
         if (!self::canPersistSettings($serverId)) {
             return [
                 'ok' => false,
-                'error' => 'O WHMCS não conseguiu validar a persistência segura. A configuração atual foi preservada.',
+                'error' => I18n::t('viewmodels.webhookConfig.errors.persistenceUnavailableCurrent'),
             ];
         }
         try {
@@ -465,8 +464,8 @@ final class WebhookConfig
             return [
                 'ok' => false,
                 'error' => $deactivated
-                    ? 'A rotação não pôde ser confirmada. O endpoint foi desativado; reconecte os webhooks.'
-                    : 'A rotação não pôde ser confirmada. Reconecte os webhooks antes de receber novos eventos.',
+                    ? I18n::t('viewmodels.webhookConfig.errors.rotationUnconfirmedDeactivated')
+                    : I18n::t('viewmodels.webhookConfig.errors.rotationUnconfirmed'),
             ];
         }
         $secret = self::extractSecret($resp);
@@ -486,8 +485,8 @@ final class WebhookConfig
             return [
                 'ok' => false,
                 'error' => $deactivated
-                    ? 'A rotação não pôde ser concluída com segurança. O endpoint foi desativado; reconecte os webhooks.'
-                    : 'A rotação não pôde ser concluída com segurança. Reconecte os webhooks antes de receber novos eventos.',
+                    ? I18n::t('viewmodels.webhookConfig.errors.rotationUnsafeDeactivated')
+                    : I18n::t('viewmodels.webhookConfig.errors.rotationUnsafe'),
             ];
         }
         return ['ok' => true, 'error' => ''];
@@ -936,7 +935,7 @@ final class WebhookConfig
             'detail' => $detail,
             'action' => $action !== ''
                 ? $action
-                : 'Use uma URL HTTPS pública do receiver, acessível externamente.',
+                : I18n::t('viewmodels.webhookConfig.defaultBlockedAction'),
         ];
     }
 

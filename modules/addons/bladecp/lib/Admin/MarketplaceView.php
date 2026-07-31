@@ -22,10 +22,8 @@ final class MarketplaceView
     public static function marketplaceView(string $base): string
     {
         $h = Layout::header(
-            'Marketplace',
-            'Vendas que a BladeCP faturou e atribuiu a você pelo canal '
-                . 'marketplace, com o seu repasse e os extratos. Somente '
-                . 'leitura — não altera o billing do WHMCS. Valores por moeda.'
+            I18n::t('marketplace.title'),
+            I18n::t('marketplace.subtitle')
         );
 
         $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
@@ -68,11 +66,8 @@ final class MarketplaceView
             . $main . '</div><aside class="bcp-mkt-rail">' . $rail
             . '</aside></div>';
 
-        $note = '<div class="bcp-chips-note">Visão somente leitura puxada '
-            . 'da BladeCP com a sua API key — não cria nem edita faturas, '
-            . 'pedidos ou preços no WHMCS. Valores por moeda; moedas '
-            . 'diferentes nunca são somadas. O pagamento do repasse e o '
-            . 'extrato oficial acontecem na BladeCP.</div>';
+        $note = '<div class="bcp-chips-note">'
+            . Layout::escape(I18n::t('marketplace.read_only_note')) . '</div>';
 
         return Layout::card($h, Layout::tabs($base, 'marketplace')
             . $layout . $note);
@@ -84,27 +79,29 @@ final class MarketplaceView
      */
     public static function mktOrdersBlock(string $base, ?array $data): string
     {
-        $sec = '<div class="bcp-sec">Pedidos vendidos</div>';
+        $sec = '<div class="bcp-sec">'
+            . Layout::escape(I18n::t('marketplace.sold_orders')) . '</div>';
         if ($data === null) {
-            return $sec . '<p class="bcp-row-v">Não foi possível carregar '
-                . 'os pedidos do marketplace. Verifique o <strong>Server '
-                . 'record</strong> (API key bcp_* + Test Connection OK) e se '
-                . 'o canal marketplace está ativo na sua conta.</p>';
+            return $sec . '<p class="bcp-row-v">'
+                . Layout::escape(I18n::t('marketplace.orders_error')) . '</p>';
         }
         $items = $data['items'];
         if ($items === []) {
-            return $sec . '<p class="bcp-row-v">Nenhuma venda atribuída a '
-                . 'você ainda. Quando a BladeCP vender um plano seu listado '
-                . 'no marketplace, o pedido aparece aqui.</p>';
+            return $sec . '<p class="bcp-row-v">'
+                . Layout::escape(I18n::t('marketplace.orders_empty')) . '</p>';
         }
         $rows = '';
         foreach ($items as $o) {
             $rows .= self::marketplaceRow($o);
         }
         $table = '<div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr>'
-            . '<th scope="col">Cliente</th><th scope="col">Produto / Plano</th><th scope="col">Varejo</th>'
-            . '<th scope="col">Comissão</th><th scope="col">Líquido</th><th scope="col">Status</th>'
-            . '<th scope="col">Vendido em</th></tr></thead><tbody>' . $rows
+            . '<th scope="col">' . Layout::escape(I18n::t('marketplace.customer')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.product_plan')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.retail')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.commission')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.net')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.status')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.sold_at')) . '</th></tr></thead><tbody>' . $rows
             . '</tbody></table></div>';
 
         return $sec . self::marketplaceSummary($items) . $table
@@ -118,7 +115,7 @@ final class MarketplaceView
 
         $name = ($o['customerName'] ?? '') !== ''
             ? '<strong>' . Layout::escape($o['customerName']) . '</strong>'
-            : '<strong>—</strong>';
+                : '<strong>—</strong>';
         if (($o['customerEmail'] ?? '') !== '') {
             $name .= '<div class="bcp-csub">'
                 . Layout::escape($o['customerEmail']) . '</div>';
@@ -192,7 +189,7 @@ final class MarketplaceView
             return '<span class="bcp-pill">' . Layout::escape($status) . '</span>';
         }
         return '<span class="bcp-badge ' . $cls . '">'
-            . Layout::escape($status) . '</span>';
+            . Layout::escape(I18n::t('marketplace.status.' . $s)) . '</span>';
     }
 
     /**
@@ -212,24 +209,22 @@ final class MarketplaceView
         foreach ($byCur as $code => $t) {
             $cards .= '<div class="bcp-mkt-sum bcp-mkt-sum-accent"><div class="bcp-mkt-sum-h">'
                 . Layout::escape($code) . ' <span class="bcp-csub">'
-                . (int) $t['count'] . ' pedido(s)</span></div>'
-                . '<div class="bcp-mkt-sum-r"><span>Varejo</span><strong>'
+                . Layout::escape(I18n::t('marketplace.orders_count', ['count' => (int) $t['count']])) . '</span></div>'
+                . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.retail')) . '</span><strong>'
                 . self::money(((int) $t['retailCents']) / 100, $code)
                 . '</strong></div>'
-                . '<div class="bcp-mkt-sum-r"><span>Comissão BladeCP</span>'
+                . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.bladecp_commission')) . '</span>'
                 . '<strong>'
                 . self::money(((int) $t['commissionCents']) / 100, $code)
                 . '</strong></div>'
-                . '<div class="bcp-mkt-sum-r"><span>Seu líquido</span>'
+                . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.your_net')) . '</span>'
                 . '<strong>'
                 . self::money(((int) $t['netCents']) / 100, $code)
                 . '</strong></div></div>';
         }
         return '<div class="bcp-mkt-sums">' . $cards . '</div>'
-            . '<p class="bcp-chips-note">Resumo desta página, agregado '
-            . 'por moeda — valores de moedas diferentes nunca são '
-            . 'somados. O líquido é pré-retenção fiscal; o extrato '
-            . 'oficial de repasse fica na plataforma BladeCP.</p>';
+            . '<p class="bcp-chips-note">'
+            . Layout::escape(I18n::t('marketplace.page_summary')) . '</p>';
     }
 
     /** Paginação prev/próxima (server-rendered, sem pid). */
@@ -251,11 +246,12 @@ final class MarketplaceView
             ) . '">' . ($icon !== '' ? Layout::icon($icon) : '')
                 . Layout::escape($label) . '</a>';
         };
-        $prev = $page > 1 ? $link($page - 1, 'Anterior', 'arrow-left') : '';
-        $next = $page < $pages ? $link($page + 1, 'Próxima', '') : '';
+        $prev = $page > 1 ? $link($page - 1, I18n::t('marketplace.previous'), 'arrow-left') : '';
+        $next = $page < $pages ? $link($page + 1, I18n::t('marketplace.next'), '') : '';
         return '<div class="bcp-actions bcp-mkt-pager">'
-            . '<span class="bcp-row-v">Página ' . $page . ' de ' . $pages
-            . ' · ' . $total . ' pedido(s)</span>' . $prev . $next
+            . '<span class="bcp-row-v">'
+            . Layout::escape(I18n::t('marketplace.page_of', ['page' => $page, 'pages' => $pages, 'total' => $total]))
+            . '</span>' . $prev . $next
             . '</div>';
     }
 
@@ -267,23 +263,24 @@ final class MarketplaceView
     /** Mensalidade do substrato em aberto (BRL) + lista de faturas. */
     public static function acctSubstrateBlock(?array $substrate): string
     {
-        $sec = '<div class="bcp-sec">Mensalidade em aberto (substrato)</div>';
+        $sec = '<div class="bcp-sec">'
+            . Layout::escape(I18n::t('marketplace.open_substrate')) . '</div>';
         if ($substrate === null) {
-            return $sec . '<p class="bcp-row-v muted">Não foi possível '
-                . 'carregar as faturas de substrato.</p>';
+            return $sec . '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('marketplace.substrate_error')) . '</p>';
         }
         $code = $substrate['currency'] ?: 'BRL';
         $total = '<div class="bcp-mkt-sum bcp-mkt-sum-accent"><div class="bcp-mkt-sum-h">'
             . Layout::escape($code) . ' <span class="bcp-csub">'
-            . count($substrate['items']) . ' fatura(s)</span></div>'
-            . '<div class="bcp-mkt-sum-r"><span>Total em aberto</span>'
+            . Layout::escape(I18n::t('marketplace.invoices_count', ['count' => count($substrate['items'])])) . '</span></div>'
+            . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.total_outstanding')) . '</span>'
             . '<strong>' . self::money($substrate['totalCents'] / 100, $code)
             . '</strong></div></div>';
 
         if ($substrate['items'] === []) {
             return $sec . '<div class="bcp-mkt-sums">' . $total . '</div>'
-                . '<p class="bcp-row-v muted">Nenhuma fatura de mensalidade '
-                . 'em aberto.</p>';
+                . '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('marketplace.substrate_empty')) . '</p>';
         }
 
         $rows = '';
@@ -304,8 +301,11 @@ final class MarketplaceView
                 . (($it['dueDate'] ?? '') !== '' ? Layout::escape($it['dueDate']) : '—')
                 . '</td></tr>';
         }
-        $table = '<div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">Fatura</th>'
-            . '<th scope="col">Valor</th><th scope="col">Status</th><th scope="col">Vencimento</th></tr>'
+        $table = '<div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.invoice')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.amount')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.status')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.due_date')) . '</th></tr>'
             . '</thead><tbody>' . $rows . '</tbody></table></div>';
 
         return $sec . '<div class="bcp-mkt-sums">' . $total . '</div>'
@@ -315,31 +315,32 @@ final class MarketplaceView
     /** Repasse/comissão por moeda (pendente/confirmado/liberado/líquido). */
     public static function acctCommissionBlock(?array $summary): string
     {
-        $sec = '<div class="bcp-sec">Repasse / comissão</div>';
+        $sec = '<div class="bcp-sec">'
+            . Layout::escape(I18n::t('marketplace.payout_commission')) . '</div>';
         if ($summary === null) {
-            return $sec . '<p class="bcp-row-v muted">Não foi possível '
-                . 'carregar o resumo de repasse.</p>';
+            return $sec . '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('marketplace.payout_error')) . '</p>';
         }
         $curs = $summary['currencies'];
         if ($curs === []) {
-            return $sec . '<p class="bcp-row-v muted">Sem repasse '
-                . 'registrado ainda.</p>';
+            return $sec . '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('marketplace.payout_empty')) . '</p>';
         }
         $cards = '';
         foreach ($curs as $c) {
             $code = (string) ($c['currency'] ?? '');
             $cards .= '<div class="bcp-mkt-sum bcp-mkt-sum-accent"><div class="bcp-mkt-sum-h">'
                 . Layout::escape($code) . '</div>'
-                . '<div class="bcp-mkt-sum-r"><span>Pendente</span><strong>'
+                . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.pending')) . '</span><strong>'
                 . self::money(((int) $c['pendingCents']) / 100, $code)
                 . '</strong></div>'
-                . '<div class="bcp-mkt-sum-r"><span>Confirmado</span><strong>'
+                . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.confirmed')) . '</span><strong>'
                 . self::money(((int) $c['confirmedCents']) / 100, $code)
                 . '</strong></div>'
-                . '<div class="bcp-mkt-sum-r"><span>Liberado</span><strong>'
+                . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.cleared')) . '</span><strong>'
                 . self::money(((int) $c['clearedCents']) / 100, $code)
                 . '</strong></div>'
-                . '<div class="bcp-mkt-sum-r"><span>Líquido (vida)</span>'
+                . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.lifetime_net')) . '</span>'
                 . '<strong>'
                 . self::money(((int) $c['lifetimeNetPayableCents']) / 100, $code)
                 . '</strong></div></div>';
@@ -350,18 +351,16 @@ final class MarketplaceView
     /** Cobertura do substrato + break-even (BRL). */
     public static function acctCoverageBlock(?array $summary): string
     {
-        $sec = '<div class="bcp-sec">Cobertura do substrato</div>';
+        $sec = '<div class="bcp-sec">'
+            . Layout::escape(I18n::t('marketplace.substrate_coverage')) . '</div>';
         if ($summary === null) {
-            return $sec . '<p class="bcp-row-v muted">Não foi possível '
-                . 'carregar a cobertura.</p>';
+            return $sec . '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('marketplace.coverage_error')) . '</p>';
         }
         $cov = $summary['substrateCoverage'];
         if ($cov === null) {
-            return $sec . '<p class="bcp-row-v muted">Nenhum servidor-base '
-                . 'ativo foi associado à cobertura deste canal. O opt-in e '
-                . 'a escolha do servidor-base são feitos no painel BladeCP; '
-                . 'esta tela '
-                . 'é somente leitura.</p>';
+            return $sec . '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('marketplace.coverage_empty')) . '</p>';
         }
         $code = 'BRL';
         $break = $cov['breakEvenSalesRemaining'];
@@ -373,17 +372,17 @@ final class MarketplaceView
             : 0;
         $card = '<div class="bcp-mkt-sum"><div class="bcp-mkt-sum-h">'
             . Layout::escape($code) . '</div>'
-            . '<div class="bcp-mkt-sum-r"><span>Mensalidade</span><strong>'
+            . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.monthly')) . '</span><strong>'
             . self::money($monthly / 100, $code)
             . '</strong></div>'
-            . '<div class="bcp-mkt-sum-r"><span>Coberto</span><strong>'
+            . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.covered')) . '</span><strong>'
             . self::money($covered / 100, $code)
             . '</strong></div>'
             . '<div class="bcp-mkt-bar"><i style="width:' . $pct . '%"></i></div>'
-            . '<div class="bcp-mkt-sum-r"><span>Falta cobrir</span><strong>'
+            . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.remaining')) . '</span><strong>'
             . self::money(((int) $cov['remainingCents']) / 100, $code)
             . '</strong></div>'
-            . '<div class="bcp-mkt-sum-r"><span>Vendas até o break-even</span>'
+            . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.sales_to_break_even')) . '</span>'
             . '<strong>' . ($break !== null ? (int) $break : '—')
             . '</strong></div></div>';
 
@@ -397,23 +396,22 @@ final class MarketplaceView
      */
     public static function acctCatalogCard(?array $summary): string
     {
-        $sec = '<div class="bcp-sec">Catálogo</div>';
+        $sec = '<div class="bcp-sec">'
+            . Layout::escape(I18n::t('marketplace.catalog')) . '</div>';
         if ($summary === null) {
-            return $sec . '<p class="bcp-row-v muted">Não foi possível '
-                . 'carregar o catálogo.</p>';
+            return $sec . '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('marketplace.catalog_error')) . '</p>';
         }
         return $sec . '<div class="bcp-mkt-sums"><div class="bcp-mkt-sum">'
-            . '<div class="bcp-mkt-sum-r"><span>Listagens ativas</span>'
+            . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.active_listings')) . '</span>'
             . '<strong>' . (int) ($summary['activeListings'] ?? 0)
             . '</strong></div>'
-            . '<div class="bcp-mkt-sum-r"><span>Assinaturas vendidas</span>'
+            . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.sold_subscriptions')) . '</span>'
             . '<strong>' . (int) ($summary['soldSubscriptions'] ?? 0)
             . '</strong></div></div></div>'
             . ((int) ($summary['activeListings'] ?? 0) === 0
-                ? '<p class="bcp-row-v muted">Nenhum plano está listado. '
-                    . 'Ative o marketplace e publique os planos pelo painel '
-                    . 'BladeCP. '
-                    . 'O addon não altera opt-in nem listagens.</p>'
+                ? '<p class="bcp-row-v muted">'
+                    . Layout::escape(I18n::t('marketplace.catalog_empty')) . '</p>'
                 : '');
     }
 
@@ -423,14 +421,15 @@ final class MarketplaceView
         ?array $statements
     ): string
     {
-        $sec = '<div class="bcp-sec">Extratos</div>';
+        $sec = '<div class="bcp-sec">'
+            . Layout::escape(I18n::t('marketplace.statements')) . '</div>';
         if ($statements === null) {
-            return $sec . '<p class="bcp-row-v muted">Não foi possível '
-                . 'carregar os extratos.</p>';
+            return $sec . '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('marketplace.statements_error')) . '</p>';
         }
         if ($statements['items'] === []) {
-            return $sec . '<p class="bcp-row-v muted">Nenhum extrato de '
-                . 'fechamento ainda.</p>';
+            return $sec . '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('marketplace.statements_empty')) . '</p>';
         }
         $rows = '';
         foreach ($statements['items'] as $s) {
@@ -462,11 +461,17 @@ final class MarketplaceView
                     : '—')
                 . '</td><td><a class="btn btn-default" href="'
                 . Layout::escape($base . '&action=marketplace&statement=' . (int) $s['id'])
-                . '">Detalhes</a></td></tr>';
+                . '">' . Layout::escape(I18n::t('marketplace.details')) . '</a></td></tr>';
         }
-        $table = '<div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">Período</th>'
-            . '<th scope="col">Bruto</th><th scope="col">Comissão</th><th scope="col">Substrato</th>'
-            . '<th scope="col">NET</th><th scope="col">Status</th><th scope="col">Pago em</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead>'
+        $table = '<div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.period')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.gross')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.commission')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.substrate')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.net')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.status')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.paid_at')) . '</th><th scope="col"><span class="sr-only">'
+            . Layout::escape(I18n::t('marketplace.actions')) . '</span></th></tr></thead>'
             . '<tbody>' . $rows . '</tbody></table></div>';
         return $sec . $table;
     }
@@ -480,30 +485,30 @@ final class MarketplaceView
         int $statementId,
         ?array $detail
     ): string {
-        $sec = '<div class="bcp-sec">Detalhe do extrato #'
-            . $statementId . '</div>';
+        $sec = '<div class="bcp-sec">'
+            . Layout::escape(I18n::t('marketplace.statement_detail', ['id' => $statementId]))
+            . '</div>';
         $back = '<p><a class="btn btn-default" href="'
             . Layout::escape($base . '&action=marketplace')
-            . '">Fechar detalhe</a></p>';
+            . '">' . Layout::escape(I18n::t('marketplace.close_detail')) . '</a></p>';
         if ($detail === null) {
-            return $sec . '<p class="bcp-row-v muted">Não foi possível '
-                . 'carregar este extrato. Ele pode não existir ou não '
-                . 'pertencer à conta conectada.</p>' . $back;
+            return $sec . '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('marketplace.statement_error')) . '</p>' . $back;
         }
         $statement = $detail['statement'];
         $code = (string) ($statement['currency'] ?? '');
         $summary = '<div class="bcp-mkt-sums"><div class="bcp-mkt-sum">'
             . '<div class="bcp-mkt-sum-h">' . Layout::escape($code) . '</div>'
-            . '<div class="bcp-mkt-sum-r"><span>Bruto</span><strong>'
+            . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.gross')) . '</span><strong>'
             . self::money(((int) ($statement['totalGrossCents'] ?? 0)) / 100, $code)
             . '</strong></div>'
-            . '<div class="bcp-mkt-sum-r"><span>Comissão</span><strong>'
+            . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.commission')) . '</span><strong>'
             . self::money(
                 ((int) ($statement['totalCommissionCents'] ?? 0)) / 100,
                 $code
             )
             . '</strong></div>'
-            . '<div class="bcp-mkt-sum-r"><span>NET</span><strong>'
+            . '<div class="bcp-mkt-sum-r"><span>' . Layout::escape(I18n::t('marketplace.net')) . '</span><strong>'
             . self::money(
                 ((int) ($statement['settlementNetCents'] ?? 0)) / 100,
                 $code
@@ -520,30 +525,34 @@ final class MarketplaceView
         ?array $ledger,
         string $selectedStatus
     ): string {
-        $sec = '<div class="bcp-sec">Ledger de comissões</div>';
-        $options = '<option value="">Todos os estados</option>';
+        $sec = '<div class="bcp-sec">'
+            . Layout::escape(I18n::t('marketplace.commission_ledger')) . '</div>';
+        $options = '<option value="">'
+            . Layout::escape(I18n::t('marketplace.all_states')) . '</option>';
         foreach (MarketplaceAccount::COMMISSION_STATUSES as $status) {
             $options .= '<option value="' . Layout::escape($status) . '"'
                 . ($selectedStatus === $status ? ' selected' : '') . '>'
-                . Layout::escape($status) . '</option>';
+                . Layout::escape(I18n::t('marketplace.status.' . $status))
+                . '</option>';
         }
         $filter = '<form method="get" action="' . Layout::escape($base)
             . '" class="bcp-actions">'
             . '<input type="hidden" name="module" value="bladecp">'
             . '<input type="hidden" name="action" value="marketplace">'
-            . '<label class="sr-only" for="bcp-ledger-status">Filtrar ledger por estado</label>'
+            . '<label class="sr-only" for="bcp-ledger-status">'
+            . Layout::escape(I18n::t('marketplace.filter_ledger')) . '</label>'
             . '<select id="bcp-ledger-status" name="ledger_status" class="form-control" '
             . 'style="max-width:220px">' . $options . '</select>'
-            . '<button type="submit" class="btn btn-default">Filtrar</button>'
+            . '<button type="submit" class="btn btn-default">'
+            . Layout::escape(I18n::t('marketplace.filter')) . '</button>'
             . '</form>';
         if ($ledger === null) {
-            return $sec . $filter . '<p class="bcp-row-v muted">Não foi '
-                . 'possível carregar o ledger. A API key precisa do escopo '
-                . '<code>partner:read</code>.</p>';
+            return $sec . $filter . '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('marketplace.ledger_error')) . '</p>';
         }
         if ($ledger['items'] === []) {
-            return $sec . $filter . '<p class="bcp-row-v muted">Nenhuma '
-                . 'linha de comissão neste filtro.</p>';
+            return $sec . $filter . '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('marketplace.ledger_empty')) . '</p>';
         }
         return $sec . $filter
             . self::commissionLinesTable($ledger['items'])
@@ -554,17 +563,19 @@ final class MarketplaceView
     public static function commissionLinesTable(array $lines): string
     {
         if ($lines === []) {
-            return '<p class="bcp-row-v muted">Este extrato não possui linhas.</p>';
+            return '<p class="bcp-row-v muted">'
+                . Layout::escape(I18n::t('marketplace.statement_lines_empty')) . '</p>';
         }
         $rows = '';
         foreach ($lines as $line) {
             $code = (string) ($line['currency'] ?? '');
             $reference = ($line['productName'] ?? '') !== ''
                 ? '<strong>' . Layout::escape($line['productName']) . '</strong>'
-                : 'Não informado';
+                : Layout::escape(I18n::t('marketplace.not_provided'));
             if (($line['invoiceId'] ?? '') !== '') {
-                $reference .= '<div class="bcp-csub">Fatura '
-                    . Layout::escape($line['invoiceId']) . '</div>';
+                $reference .= '<div class="bcp-csub">'
+                    . Layout::escape(I18n::t('marketplace.invoice_prefix', ['id' => $line['invoiceId']]))
+                    . '</div>';
             }
             $rows .= '<tr><td>' . $reference . '</td><td>'
                 . Layout::escape((string) ($line['source'] ?? '')) . '</td><td>'
@@ -577,13 +588,18 @@ final class MarketplaceView
                 . self::marketplaceStatusBadge((string) ($line['status'] ?? ''))
                 . '</td><td class="bcp-row-v">'
                 . Layout::escape((string) (
-                    $line['accruedAtLabel'] ?? 'Não informado'
+                    $line['accruedAtLabel'] ?? I18n::t('marketplace.not_provided')
                 ))
                 . '</td></tr>';
         }
-        return '<div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">Referência</th>'
-            . '<th scope="col">Origem</th><th scope="col">Bruto</th><th scope="col">Comissão</th>'
-            . '<th scope="col">Líquido</th><th scope="col">Status</th><th scope="col">Acumulado em</th>'
+        return '<div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.reference')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.source')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.gross')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.commission')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.net')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.status')) . '</th><th scope="col">'
+            . Layout::escape(I18n::t('marketplace.accrued_at')) . '</th>'
             . '</tr></thead><tbody>' . $rows . '</tbody></table></div>';
     }
 
@@ -604,12 +620,15 @@ final class MarketplaceView
                 . ($status !== '' ? '&ledger_status=' . rawurlencode($status) : '');
         };
         return '<div class="bcp-actions bcp-mkt-pager">'
-            . '<span class="bcp-row-v">Página ' . $page . ' de ' . $pages
-            . ' · ' . $total . ' linha(s)</span>'
+            . '<span class="bcp-row-v">'
+            . Layout::escape(I18n::t('marketplace.lines_page_of', ['page' => $page, 'pages' => $pages, 'total' => $total]))
+            . '</span>'
             . ($page > 1 ? '<a class="btn btn-default" href="'
-                . Layout::escape($url($page - 1)) . '">Anterior</a>' : '')
+                . Layout::escape($url($page - 1)) . '">'
+                . Layout::escape(I18n::t('marketplace.previous')) . '</a>' : '')
             . ($page < $pages ? '<a class="btn btn-default" href="'
-                . Layout::escape($url($page + 1)) . '">Próxima</a>' : '')
+                . Layout::escape($url($page + 1)) . '">'
+                . Layout::escape(I18n::t('marketplace.next')) . '</a>' : '')
             . '</div>';
     }
 }

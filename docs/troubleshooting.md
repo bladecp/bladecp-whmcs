@@ -5,11 +5,10 @@
 Check the BladeCP server record:
 
 1. Confirm that **Secure** is enabled.
-2. Confirm that **Hostname** is `api.bladecp.com` for production or
-   `api.bladecp.cloud` for sandbox.
+2. Confirm that **Hostname** is `api.bladecp.com`.
 3. Confirm that the **Access Hash** contains the API key with no extra spaces
    or line breaks.
-4. Confirm that the key belongs to the same environment as the hostname.
+4. Confirm that the key is active for the configured production account.
 5. Confirm that the WHMCS host can make outbound HTTPS requests and that PHP
    cURL is enabled.
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace WHMCS\Module\Addon\Bladecp;
 
+use WHMCS\Module\Addon\Bladecp\Admin\I18n;
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
 }
@@ -22,25 +23,25 @@ final class CatalogIntegrity
                 'unknown' => true,
                 'scope' => null,
                 'summary' => ['total' => 0, 'eligible' => 0, 'blocked' => 0, 'unknown' => 0, 'stale' => 0, 'lastObservedAt' => null],
-                'issues' => [self::issue('catalog_scope_unknown', 'Não foi possível associar o catálogo a um único servidor e grupo BladeCP.', 'select_server')],
+                'issues' => [self::issue('catalog_scope_unknown', I18n::t('viewmodels.catalog.scopeUnknown'), 'select_server')],
             ];
         }
         $summary = IntegrationReadiness::catalogSummary($scope);
         $issues = [];
         if (!CatalogStateRepository::isInstalled()) {
-            $issues[] = self::issue('catalog_state_missing', 'O controle de disponibilidade ainda não foi instalado.', 'activate_addon');
+            $issues[] = self::issue('catalog_state_missing', I18n::t('viewmodels.catalog.stateMissing'), 'activate_addon');
         }
         if ($summary['total'] === 0) {
-            $issues[] = self::issue('availability_not_observed', 'Nenhum produto possui uma observação de disponibilidade.', 'refresh_catalog');
+            $issues[] = self::issue('availability_not_observed', I18n::t('viewmodels.catalog.availabilityNotObserved'), 'refresh_catalog');
         }
         if ($summary['stale'] > 0) {
-            $issues[] = self::issue('availability_stale', $summary['stale'] . ' produto(s) têm disponibilidade expirada.', 'refresh_catalog');
+            $issues[] = self::issue('availability_stale', I18n::t('viewmodels.catalog.availabilityStale', ['count' => $summary['stale']]), 'refresh_catalog');
         }
         if ($summary['unknown'] > 0) {
-            $issues[] = self::issue('availability_unknown', $summary['unknown'] . ' produto(s) não têm disponibilidade verificável.', 'refresh_catalog');
+            $issues[] = self::issue('availability_unknown', I18n::t('viewmodels.catalog.availabilityUnknown', ['count' => $summary['unknown']]), 'refresh_catalog');
         }
         if ($summary['blocked'] > 0) {
-            $issues[] = self::issue('sales_blocked', $summary['blocked'] . ' produto(s) estão ocultos para novas vendas.', 'review_catalog');
+            $issues[] = self::issue('sales_blocked', I18n::t('viewmodels.catalog.salesBlocked', ['count' => $summary['blocked']]), 'review_catalog');
         }
         return [
             'ok' => $issues === [],

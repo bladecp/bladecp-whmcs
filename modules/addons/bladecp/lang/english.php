@@ -11,6 +11,7 @@ if (!defined('WHMCS')) {
 }
 
 $_ADDONLANG = [
+    'bladecp_locale' => 'english',
     'name' => 'BladeCP',
     'description' => 'Component bundles + order-form Configurable Options sync. '
         . 'No credentials stored here — the API key lives on the Server record.',

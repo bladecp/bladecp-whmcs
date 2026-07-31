@@ -31,8 +31,8 @@ final class SetupView
         foreach (Setup::preflight() as $c) {
             $pf .= '<li class="bcp-pf-' . ($c['ok'] ? 'ok' : 'no') . '">'
                 . ($c['ok'] ? Layout::icon('check') : '<span class="bcp-pf-x">!</span>')
-                . '<span>' . Layout::escape($c['label']) . '</span>'
-                . '<em>' . Layout::escape($c['detail']) . '</em></li>';
+                . '<span>' . Layout::escape(self::preflightLabel((string) $c['label'])) . '</span>'
+                . '<em>' . Layout::escape(self::preflightDetail((string) $c['detail'])) . '</em></li>';
         }
 
         $existing = Setup::existingServer();
@@ -56,19 +56,24 @@ final class SetupView
                 $who = $v['ok'] ? $v['who'] : null;
             }
             $line = $okMode === 'tested'
-                ? 'Conexão com a BladeCP <strong>validada com sucesso</strong>.'
-                : 'Servidor BladeCP <strong>'
-                    . ($okMode === 'updated' ? 'atualizado' : 'criado')
-                    . '</strong>.';
+                ? Layout::escape(I18n::t('setup.flash.connectionValidatedBefore'))
+                    . ' <strong>' . Layout::escape(I18n::t('setup.flash.connectionValidatedStrong'))
+                    . '</strong>' . Layout::escape(I18n::t('setup.period'))
+                : Layout::escape(I18n::t('setup.flash.serverBefore')) . ' <strong>'
+                    . Layout::escape(I18n::t($okMode === 'updated'
+                        ? 'setup.flash.updated'
+                        : 'setup.flash.created'))
+                    . '</strong>' . Layout::escape(I18n::t('setup.period'));
             $line .= $who !== null
-                ? ' Conectado como <strong>' . Layout::escape($who) . '</strong>.'
+                ? ' ' . Layout::escape(I18n::t('setup.flash.connectedAs'))
+                    . ' <strong>' . Layout::escape($who) . '</strong>'
+                    . Layout::escape(I18n::t('setup.period'))
                 : '';
             $next = $okMode === 'tested'
-                ? 'A credencial armazenada e o servidor responderam corretamente.'
-                : 'Próximo passo: crie um produto BladeCP '
-                    . '(Setup → Products/Services), tipo '
-                    . '<strong>Stack Container</strong>, em um grupo oculto '
-                    . 'para os testes.';
+                ? Layout::escape(I18n::t('setup.flash.testedNext'))
+                : Layout::escape(I18n::t('setup.flash.createdNextBefore'))
+                    . ' <strong>Stack Container</strong> '
+                    . Layout::escape(I18n::t('setup.flash.createdNextAfter'));
             $flash = '<div class="bcp-flash bcp-flash-ok">' . Layout::icon('check')
                 . '<div>' . $line . '<div class="bcp-flash-sub">'
                 . $next . '</div></div></div>';
@@ -77,17 +82,23 @@ final class SetupView
         $prodMode = (string) ($_GET['product'] ?? '');
         if ($prodMode === 'created' || $prodMode === 'exists') {
             $ppid = (int) ($_GET['pid'] ?? 0);
-            $verb = $prodMode === 'exists' ? 'já existe' : 'criado';
+            $verb = I18n::t($prodMode === 'exists'
+                ? 'setup.productFlash.exists'
+                : 'setup.productFlash.created');
             $links = $ppid > 0
                 ? ' <a href="' . Layout::escape('configproducts.php?action=edit&id=' . $ppid)
-                    . '">Editar produto</a> · <a href="' . Layout::escape($base)
-                    . '&action=orderform&pid=' . $ppid . '">Sincronizar order form</a>'
+                    . '">' . Layout::escape(I18n::t('setup.links.editProduct')) . '</a> · <a href="' . Layout::escape($base)
+                    . '&action=orderform&pid=' . $ppid . '">'
+                    . Layout::escape(I18n::t('setup.links.syncOrderForm')) . '</a>'
                 : '';
             $flash .= '<div class="bcp-flash bcp-flash-ok">' . Layout::icon('check')
-                . '<div>Produto de teste <strong>' . $verb . '</strong> em grupo '
-                . 'oculto.' . $links . '<div class="bcp-flash-sub">Finalize escolhendo '
-                . 'o <strong>BladeCP Plan</strong> na aba Module Settings do produto. '
-                . 'Ele nasce gratuito (R$0) — a precificação fica a seu critério.'
+                . '<div>' . Layout::escape(I18n::t('setup.productFlash.before')) . ' <strong>'
+                . Layout::escape($verb) . '</strong> '
+                . Layout::escape(I18n::t('setup.productFlash.after')) . $links
+                . '<div class="bcp-flash-sub">'
+                . Layout::escape(I18n::t('setup.productFlash.nextBefore'))
+                . ' <strong>BladeCP Plan</strong> '
+                . Layout::escape(I18n::t('setup.productFlash.nextAfter'))
                 . '</div></div></div>';
         }
         if ($error !== '') {
@@ -97,30 +108,34 @@ final class SetupView
         }
 
         // Form (chave mascarada; sem autocomplete; nunca pré-preenchida).
-        $formTitle = $existing === null ? 'Conectar' : 'Substituir credencial';
+        $formTitle = I18n::t($existing === null ? 'setup.form.connect' : 'setup.form.replaceCredential');
         $buttonLabel = $existing === null
-            ? 'Conectar e configurar servidor'
-            : 'Validar e substituir chave';
+            ? I18n::t('setup.form.connectAndConfigure')
+            : I18n::t('setup.form.validateAndReplace');
         $current = '';
         if ($existing !== null) {
             $host = trim((string) ($existing->hostname ?? ''));
-            $current = '<p class="bcp-setup-note">A nova chave substituirá a '
-                . 'credencial atual do servidor'
+            $current = '<p class="bcp-setup-note">'
+                . Layout::escape(I18n::t('setup.form.currentCredentialBefore'))
                 . ($host !== '' ? ' <code>' . Layout::escape($host) . '</code>' : '')
-                . ' somente depois de ser validada com sucesso.</p>';
+                . ' ' . Layout::escape(I18n::t('setup.form.currentCredentialAfter')) . '</p>';
         }
         $form = '<form method="post" action="' . Layout::escape($base)
             . '" class="bcp-setup-form">' . Layout::token()
             . '<input type="hidden" name="action" value="setup-save">'
-            . '<label class="bcp-setup-lbl" for="bcp-apikey">API key BladeCP</label>'
+            . '<label class="bcp-setup-lbl" for="bcp-apikey">'
+            . Layout::escape(I18n::t('setup.form.apiKey')) . '</label>'
             . '<input type="password" id="bcp-apikey" name="apikey" required '
             . 'autocomplete="off" spellcheck="false" '
             . 'placeholder="bcp_sand_… · bcp_live_…" '
             . 'class="bcp-setup-input">'
-            . '<p class="bcp-setup-hint">O ambiente — <strong>Sandbox</strong> '
-            . '(<code>…_sand_…</code>) ou <strong>Produção</strong> '
-            . '(<code>…_live_…</code>) — e o endereço do servidor são '
-            . 'detectados pela chave. Você não precisa digitar o Hostname.</p>'
+            . '<p class="bcp-setup-hint">'
+            . Layout::escape(I18n::t('setup.form.environmentBefore'))
+            . ' <strong>Sandbox</strong> (<code>…_sand_…</code>) '
+            . Layout::escape(I18n::t('setup.form.environmentOr'))
+            . ' <strong>' . Layout::escape(I18n::t('setup.environment.production'))
+            . '</strong> (<code>…_live_…</code>) '
+            . Layout::escape(I18n::t('setup.form.environmentAfter')) . '</p>'
             . $current
             . '<div class="bcp-actions"><button class="btn btn-primary" '
             . 'type="submit">' . Layout::icon('plug')
@@ -128,7 +143,7 @@ final class SetupView
             . ($existing !== null
                 ? '<a class="btn btn-default" href="' . Layout::escape(
                     $base . '&action=setup'
-                ) . '">Cancelar</a>'
+                ) . '">' . Layout::escape(I18n::t('setup.actions.cancel')) . '</a>'
                 : '')
             . '</div></form>';
 
@@ -136,57 +151,70 @@ final class SetupView
         if ($existing !== null && !$editMode) {
             $host = trim((string) ($existing->hostname ?? ''));
             $environment = $host === Setup::HOST_SANDBOX
-                ? 'Sandbox'
-                : ($host === Setup::HOST_PRODUCTION ? 'Produção' : 'Personalizado');
+                ? I18n::t('setup.environment.sandbox')
+                : ($host === Setup::HOST_PRODUCTION
+                    ? I18n::t('setup.environment.production')
+                    : I18n::t('setup.environment.custom'));
             $disabled = (int) ($existing->disabled ?? 0) === 1;
             $connection = '<div class="bcp-setup-current'
                 . ($disabled ? ' is-attention' : '') . '">'
                 . '<div class="bcp-setup-current-head"><span class="bcp-setup-current-icon">'
                 . ($disabled ? '!' : Layout::icon('check')) . '</span><div>'
-                . '<span class="bcp-eyebrow">CONEXÃO CONFIGURADA</span><h4>'
-                . ($disabled ? 'Servidor desativado no WHMCS' : 'Servidor BladeCP configurado')
+                . '<span class="bcp-eyebrow">'
+                . Layout::escape(I18n::t('setup.current.eyebrow')) . '</span><h4>'
+                . Layout::escape(I18n::t($disabled
+                    ? 'setup.current.disabledTitle'
+                    : 'setup.current.configuredTitle'))
                 . '</h4></div><span class="bcp-badge '
                 . ($disabled ? 'is-warn' : 'is-ok') . '">'
                 . Layout::escape($environment) . '</span></div>'
-                . '<dl><div><dt>Servidor</dt><dd><code>'
+                . '<dl><div><dt>' . Layout::escape(I18n::t('setup.current.server'))
+                . '</dt><dd><code>'
                 . Layout::escape($host !== '' ? $host : Setup::HOST_PRODUCTION)
-                . '</code></dd></div><div><dt>Credencial</dt>'
-                . '<dd>Protegida no registro do servidor, sem exibição nesta tela.</dd>'
+                . '</code></dd></div><div><dt>'
+                . Layout::escape(I18n::t('setup.current.credential')) . '</dt>'
+                . '<dd>' . Layout::escape(I18n::t('setup.current.credentialDetail')) . '</dd>'
                 . '</div></dl><div class="bcp-actions">'
                 . '<form method="post" action="' . Layout::escape($base) . '">'
                 . Layout::token()
                 . '<input type="hidden" name="action" value="setup-test">'
                 . '<button class="btn btn-primary" type="submit">'
-                . Layout::icon('refresh') . 'Testar conexão</button></form>'
+                . Layout::icon('refresh')
+                . Layout::escape(I18n::t('setup.actions.testConnection')) . '</button></form>'
                 . '<a class="btn btn-default" href="' . Layout::escape(
                     $base . '&action=setup&edit=1'
-                ) . '">' . Layout::icon('pencil') . 'Substituir chave</a>'
+                ) . '">' . Layout::icon('pencil')
+                . Layout::escape(I18n::t('setup.actions.replaceKey')) . '</a>'
                 . '</div></div>';
         }
 
         $body = $flash . self::adminServerContextView($base, $serverContext)
             . '<div class="bcp-setup-grid">'
-            . '<section><h4 class="bcp-setup-h">Ambiente</h4>'
+            . '<section><h4 class="bcp-setup-h">'
+            . Layout::escape(I18n::t('setup.environment.title')) . '</h4>'
             . '<ul class="bcp-pf">' . $pf . '</ul></section>'
             . '<section class="bcp-setup-connect"><h4 class="bcp-setup-h">'
-            . Layout::escape($existing !== null && !$editMode ? 'Conexão' : $formTitle)
+            . Layout::escape($existing !== null && !$editMode
+                ? I18n::t('setup.header.connectionTitle')
+                : $formTitle)
             . '</h4>' . $connection
             . '</section></div>';
-        $body .= '<p class="bcp-docs-help">Quer conferir o processo antes de continuar? '
-            . Layout::docsLink('Abrir documentação BladeCP') . '</p>';
+        $body .= '<p class="bcp-docs-help">'
+            . Layout::escape(I18n::t('setup.docs.before')) . ' '
+            . Layout::docsLink(I18n::t('setup.docs.link')) . '</p>';
 
         return Layout::card(
             Layout::header(
                 $existing === null
-                    ? 'Configuração rápida'
+                    ? I18n::t('setup.header.quickTitle')
                     : ($editMode
-                        ? 'Substituir credencial BladeCP'
-                        : 'Conexão BladeCP'),
+                        ? I18n::t('setup.header.replaceTitle')
+                        : I18n::t('setup.header.connectionTitle')),
                 $existing === null
-                    ? 'Conecte seu WHMCS à BladeCP em um passo: cole a chave e pronto.'
+                    ? I18n::t('setup.header.quickSubtitle')
                     : ($editMode
-                        ? 'Substitua a credencial somente quando precisar trocar o acesso.'
-                        : 'Sua conexão já está configurada. Teste ou altere o acesso somente quando necessário.')
+                        ? I18n::t('setup.header.replaceSubtitle')
+                        : I18n::t('setup.header.connectionSubtitle'))
             ),
             Layout::tabs($base, 'setup') . $body
         ) . self::setupProductSection($base);
@@ -205,28 +233,31 @@ final class SetupView
         $candidates = is_array($context['candidates'] ?? null) ? $context['candidates'] : [];
 
         if ($state === 'configured' && $server !== null) {
-            $name = trim((string) ($server['name'] ?? 'Servidor BladeCP'));
+            $name = trim((string) ($server['name'] ?? I18n::t('setup.server.defaultName')));
             $host = trim((string) ($server['hostname'] ?? ''));
-            $id = (int) ($server['id'] ?? 0);
-            return '<div class="bcp-flash bcp-flash-ok bcp-server-context"><div><strong>Servidor BladeCP selecionado:</strong> '
-                . Layout::escape($name !== '' ? $name : 'Servidor BladeCP')
+            return '<div class="bcp-flash bcp-flash-ok bcp-server-context"><div><strong>'
+                . Layout::escape(I18n::t('setup.server.selected')) . '</strong> '
+                . Layout::escape($name !== '' ? $name : I18n::t('setup.server.defaultName'))
                 . ($host !== '' ? ' <code>' . Layout::escape($host) . '</code>' : '')
-                . ($id > 0 ? ' (servidor #' . $id . ')' : '')
-                . (!empty($context['automatic']) ? '<div class="bcp-flash-sub">Único servidor elegível detectado automaticamente.</div>' : '')
+                . (!empty($context['automatic'])
+                    ? '<div class="bcp-flash-sub">'
+                        . Layout::escape(I18n::t('setup.server.autoDetected')) . '</div>'
+                    : '')
                 . '</div></div>';
         }
 
         $title = $state === 'ambiguous'
-            ? 'Escolha o servidor BladeCP usado por estas telas.'
+            ? I18n::t('setup.server.ambiguousTitle')
             : ($state === 'invalid'
-                ? 'A seleção anterior do servidor não é mais válida.'
-                : 'Nenhum servidor BladeCP elegível foi encontrado.');
+                ? I18n::t('setup.server.invalidTitle')
+                : I18n::t('setup.server.missingTitle'));
         $detail = $state === 'ambiguous'
-            ? 'Há mais de um servidor elegível. Selecione um antes de consultar catálogo, preços, marketplace ou webhooks.'
+            ? I18n::t('setup.server.ambiguousDetail')
             : ($state === 'invalid'
-                ? 'Escolha um servidor válido ou remova a seleção inválida antes de continuar.'
-                : 'Conecte um servidor pela configuração abaixo para iniciar.');
-        $options = '<option value="">Selecione um servidor</option>';
+                ? I18n::t('setup.server.invalidDetail')
+                : I18n::t('setup.server.missingDetail'));
+        $options = '<option value="">'
+            . Layout::escape(I18n::t('setup.server.selectPlaceholder')) . '</option>';
         foreach ($candidates as $candidate) {
             if (!is_array($candidate)) {
                 continue;
@@ -235,18 +266,22 @@ final class SetupView
             if ($id <= 0) {
                 continue;
             }
-            $name = trim((string) ($candidate['name'] ?? 'Servidor BladeCP'));
+            $name = trim((string) ($candidate['name'] ?? I18n::t('setup.server.defaultName')));
             $host = trim((string) ($candidate['hostname'] ?? ''));
             $options .= '<option value="' . $id . '">' . Layout::escape(
-                ($name !== '' ? $name : 'Servidor BladeCP')
+                ($name !== '' ? $name : I18n::t('setup.server.defaultName'))
                 . ($host !== '' ? ' (' . $host . ')' : '')
-                . ' [#' . $id . ']'
+                . ' [' . I18n::t('setup.server.numberShort', ['id' => (string) $id]) . ']'
             ) . '</option>';
         }
         $selection = $candidates === []
-            ? '<input type="hidden" name="server_id" value="0"><button class="btn btn-default" type="submit">Remover seleção inválida</button>'
-            : '<label for="bcp-admin-server-id" class="sr-only">Servidor BladeCP</label><div class="bcp-fg-c"><select id="bcp-admin-server-id" name="server_id" required>'
-                . $options . '</select></div><button class="btn btn-primary" type="submit">Usar este servidor</button>';
+            ? '<input type="hidden" name="server_id" value="0"><button class="btn btn-default" type="submit">'
+                . Layout::escape(I18n::t('setup.server.clearInvalid')) . '</button>'
+            : '<label for="bcp-admin-server-id" class="sr-only">'
+                . Layout::escape(I18n::t('setup.server.defaultName'))
+                . '</label><div class="bcp-fg-c"><select id="bcp-admin-server-id" name="server_id" required>'
+                . $options . '</select></div><button class="btn btn-primary" type="submit">'
+                . Layout::escape(I18n::t('setup.server.useSelected')) . '</button>';
 
         return '<section class="bcp-flash bcp-flash-warn bcp-server-context"><div><strong>'
             . Layout::escape($title) . '</strong><div class="bcp-flash-sub">' . Layout::escape($detail)
@@ -268,26 +303,29 @@ final class SetupView
 
         $pid = Provisioning::findStarterProduct();
         if ($pid !== null) {
-            $body = '<p class="bcp-setup-note">Já existe um produto de teste BladeCP. '
+            $body = '<p class="bcp-setup-note">'
+                . Layout::escape(I18n::t('setup.product.existsBefore')) . ' '
                 . '<a href="' . Layout::escape('configproducts.php?action=edit&id=' . $pid)
-                . '">Editar</a> · <a href="' . Layout::escape($base)
-                . '&action=orderform&pid=' . $pid . '">Sincronizar order form</a>.</p>';
+                . '">' . Layout::escape(I18n::t('setup.links.edit')) . '</a> · <a href="' . Layout::escape($base)
+                . '&action=orderform&pid=' . $pid . '">'
+                . Layout::escape(I18n::t('setup.links.syncOrderForm')) . '</a>'
+                . Layout::escape(I18n::t('setup.period')) . '</p>';
         } else {
-            $body = '<p class="bcp-setup-hint">Cria um produto <strong>Stack '
-                . 'Container</strong> em um grupo <strong>oculto</strong>, gratuito '
-                . '(R$0), já ligado ao módulo e ao seu servidor — pronto pra um pedido '
-                . 'de teste sem afetar seu catálogo nem cobrar nada. Você finaliza '
-                . 'escolhendo o Plan na aba Module Settings.</p>'
+            $body = '<p class="bcp-setup-hint">'
+                . Layout::escape(I18n::t('setup.product.createBefore'))
+                . ' <strong>Stack Container</strong> '
+                . Layout::escape(I18n::t('setup.product.createAfter')) . '</p>'
                 . '<form method="post" action="' . Layout::escape($base) . '">' . Layout::token()
                 . '<input type="hidden" name="action" value="product-create">'
                 . '<div class="bcp-actions"><button class="btn btn-default" type="submit">'
-                . Layout::icon('package') . 'Criar produto de teste</button></div></form>';
+                . Layout::icon('package')
+                . Layout::escape(I18n::t('setup.product.createAction')) . '</button></div></form>';
         }
 
         return '<div class="bcp-setup-product-card">' . Layout::card(
             Layout::header(
-                'Produto de teste',
-                'Opcional — um Stack pronto pra testar.',
+                I18n::t('setup.product.title'),
+                I18n::t('setup.product.subtitle'),
                 false
             ),
             $body
@@ -295,4 +333,24 @@ final class SetupView
     }
 
     /** Resumo do servidor usado somente na composição da Visão geral. */
+
+    private static function preflightLabel(string $label): string
+    {
+        return match ($label) {
+            'PHP ≥ 8.1' => I18n::t('setup.preflight.php'),
+            'Extensão cURL' => I18n::t('setup.preflight.curl'),
+            'Extensão JSON' => I18n::t('setup.preflight.json'),
+            'SSL (OpenSSL)' => I18n::t('setup.preflight.ssl'),
+            default => $label,
+        };
+    }
+
+    private static function preflightDetail(string $detail): string
+    {
+        return match ($detail) {
+            'disponível' => I18n::t('setup.preflight.available'),
+            'ausente' => I18n::t('setup.preflight.unavailable'),
+            default => $detail,
+        };
+    }
 }

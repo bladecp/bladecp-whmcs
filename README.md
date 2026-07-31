@@ -10,14 +10,14 @@
 
 **Provision and manage BladeCP services directly from WHMCS.**
 
-Release candidate: **0.9.0-rc.3**
+Release candidate: **0.9.0-rc.4**
 
-[![Release candidate](https://img.shields.io/badge/release-0.9.0--rc.3-4f46e5)](https://github.com/bladecp/bladecp-whmcs/releases)
+[![Release candidate](https://img.shields.io/badge/release-0.9.0--rc.4-4f46e5)](https://github.com/bladecp/bladecp-whmcs/releases)
 [![License](https://img.shields.io/badge/license-MIT-4f46e5)](LICENSE)
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-4f46e5?logo=php&logoColor=white)
-![WHMCS 8.13.3 and 9.0.6](https://img.shields.io/badge/WHMCS-8.13.3%20%26%209.0.6-4f46e5)
+![WHMCS 8.x and 9.x](https://img.shields.io/badge/WHMCS-8.x%20%7C%209.x-4f46e5)
 
-[Download the latest release](https://github.com/bladecp/bladecp-whmcs/releases) · [Install](#installation) · [Configure](#configuration) · [Security](#security) · [Release process](docs/release-process.md) · [Português (Brasil)](README.pt-BR.md)
+[Download the latest release](https://github.com/bladecp/bladecp-whmcs/releases) · [Install](#installation) · [Configure](#configuration) · [Security](#security) · [Release process](docs/release-process.md) · [Português (Brasil)](README.pt-BR.md) · [Español](README.es.md)
 
 [![Public CI](https://github.com/bladecp/bladecp-whmcs/actions/workflows/ci.yml/badge.svg)](https://github.com/bladecp/bladecp-whmcs/actions/workflows/ci.yml)
 
@@ -35,19 +35,30 @@ The module supports **Stack Container**, **Edge Cloud (VPS)** and **Dedicated** 
 | --- | --- | --- |
 | Route Stack, Edge and Dedicated products from a single WHMCS module. | Create, suspend, unsuspend, change package, terminate and open single sign-on where supported by the selected product. | Activate the companion addon for guided setup, catalog import, configurable options, webhooks and diagnostics. |
 
+## Explore the live demo
+
+See the module in a prepared WHMCS environment: [whmcs-demo.bladecp.com](https://whmcs-demo.bladecp.com/).
+
+This environment is for demonstration only. Do not enter real personal,
+financial or credential information.
+
 ## See it in WHMCS
 
 <p align="center">
-  <img src="assets/screenshots/overview.jpg" alt="BladeCP service overview in WHMCS" width="900">
+  <img src="assets/screenshots/en/overview.jpg" alt="BladeCP addon overview in an English WHMCS administration area" width="900">
 </p>
 
 | Configuration | Plans and catalog |
 | --- | --- |
-| <img src="assets/screenshots/configuration.jpg" alt="BladeCP configuration in WHMCS" width="440"> | <img src="assets/screenshots/plans.jpg" alt="BladeCP plans and catalog import in WHMCS" width="440"> |
+| <img src="assets/screenshots/en/configuration.jpg" alt="BladeCP configuration in an English WHMCS administration area" width="440"> | <img src="assets/screenshots/en/plans.jpg" alt="BladeCP plans and catalog import in an English WHMCS administration area" width="440"> |
 
-<p align="center">
-  <img src="assets/screenshots/operations-diagnostics.jpg" alt="BladeCP operations and diagnostics in WHMCS" width="900">
-</p>
+| Pricing | Marketplace |
+| --- | --- |
+| <img src="assets/screenshots/en/pricing.jpg" alt="BladeCP pricing in an English WHMCS administration area" width="440"> | <img src="assets/screenshots/en/marketplace.jpg" alt="BladeCP Marketplace in an English WHMCS administration area" width="440"> |
+
+| Operations and diagnostics | Contracted service in the client area |
+| --- | --- |
+| <img src="assets/screenshots/en/operations-diagnostics.jpg" alt="BladeCP operations and diagnostics in an English WHMCS administration area" width="440"> | <img src="assets/screenshots/en/client-service.jpg" alt="BladeCP contracted service panel in an English WHMCS client area using example.com" width="440"> |
 
 ## Features
 
@@ -71,17 +82,20 @@ The provisioner works without the addon. When enabled, the addon adds a WHMCS-na
 
 ## Compatibility
 
-| Component | Supported release baseline |
+| Component | Requirement or supported baseline |
 | --- | --- |
-| WHMCS | 8.13.3 and 9.0.6, tested |
-| PHP | 8.1 or newer, tested with PHP 8.2.31 |
-| Database | MariaDB 12.3.2 |
-| WHMCS themes | Blend administration; Twenty-One and Six client themes |
-| Browser | Google Chrome 150.0.7871.187 |
-| Languages | Client-facing module: English, Portuguese (Brazil) and Spanish. Addon administration: Portuguese (Brazil). |
+| WHMCS | 8.x and 9.x. Validated with 8.13.3 and 9.0.6. |
+| PHP | 8.1 or newer. |
+| Database | Any database engine and version supported by the installed WHMCS release. The module adds no database-specific requirement. |
+| WHMCS themes | Themes that preserve standard WHMCS hooks and markup. Validated with Blend administration and Twenty-One, Six and Nexus client themes. |
+| Browser | Current evergreen browsers supported by WHMCS. The module has no browser-specific dependency. |
+| Languages | Client-facing module and addon administration: English, Portuguese (Brazil) and Spanish. |
 | Runtime dependencies | PHP cURL, JSON and OpenSSL extensions |
 
-This compatibility baseline is intentionally narrow: it lists the WHMCS releases tested for this release candidate and the local environment used for the remaining components. Test the release in a non-production WHMCS installation before making it available to customers.
+The validation snapshot for this release candidate includes WHMCS 8.13.3 and
+9.0.6, PHP 8.2.31 and MariaDB 12.3.2. These are tested environments, not
+additional minimum requirements. Test the release in a non-production WHMCS
+installation before making it available to customers.
 
 ## Requirements
 
@@ -129,8 +143,7 @@ Create a WHMCS server with these values:
 | Field | Value |
 | --- | --- |
 | Module | `bladecp` |
-| Hostname, production | `api.bladecp.com` |
-| Hostname, sandbox | `api.bladecp.cloud` |
+| Hostname | `api.bladecp.com` |
 | Secure | Enabled |
 | Access Hash | Your BladeCP Customer API key |
 

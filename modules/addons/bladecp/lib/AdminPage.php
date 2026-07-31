@@ -18,6 +18,7 @@ use WHMCS\Module\Addon\Bladecp\Admin\DiagnosticsView;
 use WHMCS\Module\Addon\Bladecp\Admin\MarketplaceView;
 use WHMCS\Module\Addon\Bladecp\Admin\WebhooksView;
 use WHMCS\Module\Addon\Bladecp\Admin\SetupView;
+use WHMCS\Module\Addon\Bladecp\Admin\I18n;
 
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
@@ -108,123 +109,123 @@ final class AdminPage
             + ($componentsReady ? 1 : 0) + ($webhookReady ? 1 : 0);
 
         $statusCards = self::overviewStatusCard(
-            'Conexão',
-            $connected ? 'Pronta' : 'Pendente',
+            I18n::t('admin.overview.connection'),
+            $connected ? I18n::t('admin.overview.ready') : I18n::t('admin.overview.pending'),
             $connected
-                ? 'A credencial do servidor está configurada.'
-                : 'Conecte a conta para começar.',
+                ? I18n::t('admin.overview.connection_ready')
+                : I18n::t('admin.overview.connection_pending'),
             $base . '&action=setup',
-            $connected ? 'Ver configuração' : 'Configurar conexão',
+            $connected ? I18n::t('admin.overview.view_configuration') : I18n::t('admin.overview.configure_connection'),
             $connected ? 'ok' : 'warn'
         );
         $statusCards .= self::overviewStatusCard(
-            'Catálogo',
-            $catalogReady ? 'Carregado' : 'Aguardando',
+            I18n::t('admin.overview.catalog'),
+            $catalogReady ? I18n::t('admin.overview.loaded') : I18n::t('admin.overview.waiting'),
             $catalogReady
-                ? count($plans) . ' plano(s) disponíveis para revisar.'
-                : 'Importe depois de conectar a conta.',
+                ? I18n::t('admin.overview.plans_available', ['count' => count($plans)])
+                : I18n::t('admin.overview.import_after_connection'),
             $base . '&action=planos',
-            'Revisar planos',
+            I18n::t('admin.overview.review_plans'),
             $catalogReady ? 'ok' : 'warn'
         );
         $statusCards .= self::overviewStatusCard(
-            'Opções do pedido',
-            $componentsReady ? 'Prontas' : 'Opcional',
+            I18n::t('admin.overview.order_options'),
+            $componentsReady ? I18n::t('admin.overview.ready_plural') : I18n::t('admin.overview.optional'),
             $componentsReady
-                ? 'Os componentes podem ser vinculados aos produtos.'
-                : 'Sincronize se quiser oferecer escolhas no carrinho.',
+                ? I18n::t('admin.overview.components_can_link')
+                : I18n::t('admin.overview.sync_to_offer_choices'),
             $base . '&action=orderform',
-            'Abrir componentes',
+            I18n::t('admin.overview.open_components'),
             $componentsReady ? 'ok' : 'muted'
         );
         $statusCards .= self::overviewStatusCard(
-            'Atualizações',
-            $webhookReady ? 'Ativas' : 'Opcional',
+            I18n::t('admin.overview.updates'),
+            $webhookReady ? I18n::t('admin.overview.active_plural') : I18n::t('admin.overview.optional'),
             $webhookReady
-                ? 'Eventos de serviço podem atualizar o WHMCS.'
-                : 'Conecte quando houver uma URL HTTPS pública.',
+                ? I18n::t('admin.overview.events_update_whmcs')
+                : I18n::t('admin.overview.connect_with_public_https'),
             $base . '&action=webhooks',
-            'Ver webhooks',
+            I18n::t('admin.overview.view_webhooks'),
             $webhookReady ? 'ok' : 'muted'
         );
 
         $steps = self::overviewStep(
             1,
-            'Conectar a conta BladeCP',
-            'Valide a credencial e guarde-a com segurança no servidor WHMCS.',
+            I18n::t('admin.overview.connect_account'),
+            I18n::t('admin.overview.connect_account_detail'),
             $connected,
             $base . '&action=setup',
-            $connected ? 'Revisar conexão' : 'Configurar conexão'
+            $connected ? I18n::t('admin.overview.review_connection') : I18n::t('admin.overview.configure_connection')
         );
         $steps .= self::overviewStep(
             2,
-            'Revisar e importar os planos',
-            'Veja quais produtos podem ser oferecidos e crie somente os que faltam.',
+            I18n::t('admin.overview.review_import_plans'),
+            I18n::t('admin.overview.review_import_plans_detail'),
             $catalogReady,
             $base . '&action=planos',
-            'Abrir planos'
+            I18n::t('admin.overview.open_plans')
         );
         $steps .= self::overviewStep(
             3,
-            'Definir a experiência de compra',
-            'Escolha entre componentes fixos ou opções para o cliente selecionar.',
+            I18n::t('admin.overview.define_purchase_experience'),
+            I18n::t('admin.overview.define_purchase_experience_detail'),
             $componentsReady,
             $base . '&action=orderform',
-            'Configurar componentes'
+            I18n::t('admin.overview.configure_components')
         );
         $steps .= self::overviewStep(
             4,
-            'Testar antes de publicar',
-            'Use um produto de teste e acompanhe a operação antes de abrir vendas.',
+            I18n::t('admin.overview.test_before_publish'),
+            I18n::t('admin.overview.test_before_publish_detail'),
             false,
             $base . '&action=operation',
-            'Abrir operação'
+            I18n::t('admin.overview.open_operation')
         );
 
         $integrityLine = self::snapshotLine($integrity, 'message');
         if ($integrityLine === '') {
             $integrityLine = $catalogReady
-                ? 'O catálogo está disponível para revisão. Produtos já criados não são apagados por esta tela.'
-                : 'Assim que a conexão estiver pronta, o módulo mostrará o estado do catálogo aqui.';
+                ? I18n::t('admin.overview.catalog_available')
+                : I18n::t('admin.overview.catalog_after_connection');
         }
         $readinessLine = self::snapshotLine($readiness, 'message');
         if ($readinessLine === '') {
-            $readinessLine = $readyCount . ' de 4 áreas principais estão prontas para uso.';
+            $readinessLine = I18n::t('admin.overview.areas_ready', ['count' => $readyCount]);
         }
 
         $hero = '<section class="bcp-overview-hero" aria-labelledby="bcp-overview-title">'
-            . '<div><span class="bcp-eyebrow">CENTRAL DE CONTROLE</span>'
-            . '<h4 id="bcp-overview-title">Seu catálogo BladeCP, com contexto em cada etapa.</h4>'
-            . '<p>Configure com calma, acompanhe o que está pronto e saiba exatamente para onde ir a seguir. Nenhuma ação desta tela publica ou altera produtos automaticamente.</p></div>'
-            . '<div class="bcp-overview-score" aria-label="' . $readyCount . ' de 4 áreas prontas">'
-            . '<strong>' . $readyCount . '<small>/4</small></strong><span>áreas prontas</span></div></section>';
+            . '<div><span class="bcp-eyebrow">' . self::e(I18n::t('admin.overview.control_center')) . '</span>'
+            . '<h4 id="bcp-overview-title">' . self::e(I18n::t('admin.overview.hero_title')) . '</h4>'
+            . '<p>' . self::e(I18n::t('admin.overview.hero_detail')) . '</p></div>'
+            . '<div class="bcp-overview-score" aria-label="' . self::e(I18n::t('admin.overview.areas_ready', ['count' => $readyCount])) . '">'
+            . '<strong>' . $readyCount . '<small>/4</small></strong><span>' . self::e(I18n::t('admin.overview.areas_ready_short')) . '</span></div></section>';
         $serverContextCard = self::serverContextCard($base);
         if ($serverContextCard !== '') {
             $hero = '<div class="row bcp-overview-top">'
                 . '<div class="col-md-8 col-lg-9">' . $hero . '</div>'
                 . '<div class="col-md-4 col-lg-3">' . $serverContextCard . '</div></div>';
         }
-        $quick = '<div class="bcp-overview-actions" aria-label="Ações rápidas">'
+        $quick = '<div class="bcp-overview-actions" aria-label="' . self::e(I18n::t('admin.overview.quick_actions')) . '">'
             . '<a class="btn btn-primary" href="' . self::e($connected ? $base . '&action=planos' : $base . '&action=setup') . '">'
             . self::ic($connected ? 'layers' : 'plug')
-            . ($connected ? 'Revisar catálogo' : 'Começar configuração') . '</a>'
+            . self::e($connected ? I18n::t('admin.overview.review_catalog') : I18n::t('admin.overview.start_configuration')) . '</a>'
             . '<a class="btn btn-default" href="' . self::e($base . '&action=diagnostics') . '">'
-            . self::ic('refresh') . 'Ver diagnóstico</a>'
+            . self::ic('refresh') . self::e(I18n::t('admin.overview.view_diagnostics')) . '</a>'
             . '<a class="btn btn-default" href="' . self::e($base . '&action=operation') . '">'
-            . self::ic('package') . 'Acompanhar operação</a>'
-            . self::docsLink('Abrir documentação', 'btn btn-default') . '</div>';
-        $context = '<div class="bcp-overview-context"><section><h5>Estado do catálogo</h5><p>'
+            . self::ic('package') . self::e(I18n::t('admin.overview.follow_operation')) . '</a>'
+            . self::docsLink(I18n::t('admin.overview.open_documentation'), 'btn btn-default') . '</div>';
+        $context = '<div class="bcp-overview-context"><section><h5>' . self::e(I18n::t('admin.overview.catalog_status')) . '</h5><p>'
             . self::e($integrityLine) . '</p><a href="' . self::e($base . '&action=planos')
-            . '">Revisar planos</a></section><section><h5>Próximo passo</h5><p>'
+            . '">' . self::e(I18n::t('admin.overview.review_plans')) . '</a></section><section><h5>' . self::e(I18n::t('admin.overview.next_step')) . '</h5><p>'
             . self::e($readinessLine) . '</p><a href="' . self::e($base . '&action=diagnostics')
-            . '">Entender os indicadores</a></section></div>';
+            . '">' . self::e(I18n::t('admin.overview.understand_indicators')) . '</a></section></div>';
 
         return self::card(
-            self::header('BladeCP', 'Configuração, catálogo e acompanhamento do seu módulo em um só lugar.'),
+            self::header('BladeCP', I18n::t('admin.overview.header_detail')),
             self::tabs($base, 'overview') . $hero . $quick
                 . '<div class="bcp-overview-status" role="list">' . $statusCards . '</div>'
                 . '<section class="bcp-onboarding" aria-labelledby="bcp-onboarding-title"><div class="bcp-section-heading">'
-                . '<div><span class="bcp-eyebrow">PRIMEIRO USO</span><h4 id="bcp-onboarding-title">Roteiro recomendado</h4><p>Você pode voltar a qualquer etapa. O módulo preserva produtos existentes e mostra alertas antes de bloquear novas vendas.</p></div>'
+                . '<div><span class="bcp-eyebrow">' . self::e(I18n::t('admin.overview.first_use')) . '</span><h4 id="bcp-onboarding-title">' . self::e(I18n::t('admin.overview.recommended_route')) . '</h4><p>' . self::e(I18n::t('admin.overview.onboarding_detail')) . '</p></div>'
                 . '</div><ol class="bcp-onboarding-list">' . $steps . '</ol></section>' . $context
         );
     }
@@ -232,8 +233,8 @@ final class AdminPage
     private static function operationView(string $base): string
     {
         $h = self::header(
-            'Operação',
-            'Acompanhe o estado do catálogo e dos serviços sem alterar pedidos ou produtos por esta tela.'
+            I18n::t('admin.operation.title'),
+            I18n::t('admin.operation.header_detail')
         );
         $data = [];
         if (class_exists(Operation::class)) {
@@ -243,38 +244,38 @@ final class AdminPage
                 $data = [];
             }
         }
-        $body = '<section class="bcp-operation-intro"><span class="bcp-eyebrow">ACOMPANHAMENTO</span>'
-            . '<h4>Visibilidade para a rotina, sem surpresas.</h4><p>Este painel é somente leitura. Use-o para identificar itens que merecem atenção antes de agir nas telas próprias do WHMCS.</p></section>';
+        $body = '<section class="bcp-operation-intro"><span class="bcp-eyebrow">' . self::e(I18n::t('admin.operation.eyebrow')) . '</span>'
+            . '<h4>' . self::e(I18n::t('admin.operation.intro_title')) . '</h4><p>' . self::e(I18n::t('admin.operation.intro_detail')) . '</p></section>';
         if ($data === []) {
-            $body .= '<div class="bcp-empty-state"><strong>Ainda não há dados suficientes para resumir a operação.</strong>'
-                . '<p>Conecte a conta, importe ou revise o catálogo e volte aqui. Enquanto isso, o diagnóstico mostra as verificações disponíveis.</p>'
-                . '<a class="btn btn-default" href="' . self::e($base . '&action=diagnostics') . '">Ver diagnóstico</a></div>';
+            $body .= '<div class="bcp-empty-state"><strong>' . self::e(I18n::t('admin.operation.empty_title')) . '</strong>'
+                . '<p>' . self::e(I18n::t('admin.operation.empty_detail')) . '</p>'
+                . '<a class="btn btn-default" href="' . self::e($base . '&action=diagnostics') . '">' . self::e(I18n::t('admin.overview.view_diagnostics')) . '</a></div>';
         } else {
             $capabilities = is_array($data['capabilities'] ?? null) ? $data['capabilities'] : [];
             $summary = is_array($data['summary'] ?? null) ? $data['summary'] : [];
             $filters = is_array($data['filters'] ?? null) ? $data['filters'] : [];
             $services = is_array($data['services'] ?? null) ? $data['services'] : [];
             if (empty($capabilities['services'])) {
-                $body .= '<div class="bcp-badge is-warn">A leitura dos serviços locais está indisponível nesta instalação. Os números abaixo não devem ser interpretados como zero confirmado.</div>';
+                $body .= '<div class="bcp-badge is-warn">' . self::e(I18n::t('admin.operation.local_services_unavailable')) . '</div>';
             }
             $body .= self::operationSummary($summary)
                 . self::operationFilters($base, $filters)
                 . self::operationServices($base, $services, $filters)
                 . '<div class="bcp-operation-evidence-grid">'
                 . self::operationEvidence(
-                    'Falhas recentes',
+                    I18n::t('admin.operation.recent_failures'),
                     is_array($data['failures'] ?? null) ? $data['failures'] : [],
-                    'Nenhuma falha do módulo foi encontrada nos registros disponíveis.'
+                    I18n::t('admin.operation.no_failures')
                 )
                 . self::operationEvidence(
-                    'Sincronizações recentes',
+                    I18n::t('admin.operation.recent_syncs'),
                     is_array($data['synchronizations'] ?? null) ? $data['synchronizations'] : [],
-                    'Ainda não há sincronizações registradas para exibir.'
+                    I18n::t('admin.operation.no_syncs')
                 )
                 . self::operationEvidence(
-                    'Webhooks recentes',
+                    I18n::t('admin.operation.recent_webhooks'),
                     is_array($data['webhooks'] ?? null) ? $data['webhooks'] : [],
-                    'Ainda não há eventos de webhook registrados para exibir.'
+                    I18n::t('admin.operation.no_webhooks')
                 ) . '</div>';
 
             $serviceId = isset($_GET['service_id']) ? (int) $_GET['service_id'] : 0;
@@ -282,7 +283,7 @@ final class AdminPage
                 $body .= self::operationTimeline($base, $serviceId);
             }
         }
-        $body .= '<div class="bcp-help-strip"><strong>Como interpretar:</strong> disponível significa que o módulo recebeu uma informação atual. Atenção indica que vale revisar antes de vender ou provisionar. Esta tela não expõe chaves, dados privados de clientes nem conteúdo de eventos.</div>';
+        $body .= '<div class="bcp-help-strip"><strong>' . self::e(I18n::t('admin.operation.how_to_interpret')) . '</strong> ' . self::e(I18n::t('admin.operation.interpret_detail')) . '</div>';
         return self::card($h, self::tabs($base, 'operation') . $body);
     }
 
@@ -334,8 +335,8 @@ final class AdminPage
         string $href,
         string $link
     ): string {
-        return '<li class="bcp-onboarding-step' . ($done ? ' is-done' : '') . '"><span class="bcp-step-number" aria-label="Passo ' . $number . '">' . ($done ? self::ic('check') : $number) . '</span><div><h5>'
-            . self::e($title) . ($done ? ' <span class="bcp-step-done">Concluído</span>' : '')
+        return '<li class="bcp-onboarding-step' . ($done ? ' is-done' : '') . '"><span class="bcp-step-number" aria-label="' . self::e(I18n::t('admin.overview.step_number', ['number' => $number])) . '">' . ($done ? self::ic('check') : $number) . '</span><div><h5>'
+            . self::e($title) . ($done ? ' <span class="bcp-step-done">' . self::e(I18n::t('admin.overview.completed')) . '</span>' : '')
             . '</h5><p>' . self::e($detail) . '</p></div><a class="btn btn-default" href="' . self::e($href) . '">' . self::e($link) . '</a></li>';
     }
 
@@ -358,8 +359,8 @@ final class AdminPage
             if (!is_array($item)) {
                 continue;
             }
-            $label = trim((string) ($item['label'] ?? $item['name'] ?? 'Indicador'));
-            $value = trim((string) ($item['value'] ?? $item['status'] ?? 'Indisponível'));
+            $label = trim((string) ($item['label'] ?? $item['name'] ?? I18n::t('admin.operation.indicator')));
+            $value = trim((string) ($item['value'] ?? $item['status'] ?? I18n::t('admin.operation.unavailable')));
             $detail = trim((string) ($item['detail'] ?? $item['message'] ?? ''));
             $cards .= '<section class="bcp-operation-card"><p>' . self::e($label) . '</p><h5>' . self::e($value) . '</h5>'
                 . ($detail !== '' ? '<small>' . self::e($detail) . '</small>' : '') . '</section>';
@@ -371,11 +372,11 @@ final class AdminPage
     private static function operationSummary(array $summary): string
     {
         $cards = [
-            ['Serviços', (int) ($summary['total'] ?? 0), 'serviços BladeCP no WHMCS'],
-            ['Ativos', (int) ($summary['active'] ?? 0), 'em operação normal'],
-            ['Pendentes', (int) ($summary['pending'] ?? 0), 'aguardando conclusão'],
-            ['Suspensos', (int) ($summary['suspended'] ?? 0), 'requerem revisão conforme necessário'],
-            ['Atenção', (int) ($summary['attention'] ?? 0), 'pendentes, suspensos ou em análise'],
+            [I18n::t('admin.operation.services'), (int) ($summary['total'] ?? 0), I18n::t('admin.operation.services_detail')],
+            [I18n::t('admin.operation.active'), (int) ($summary['active'] ?? 0), I18n::t('admin.operation.active_detail')],
+            [I18n::t('admin.operation.pending'), (int) ($summary['pending'] ?? 0), I18n::t('admin.operation.pending_detail')],
+            [I18n::t('admin.operation.suspended'), (int) ($summary['suspended'] ?? 0), I18n::t('admin.operation.suspended_detail')],
+            [I18n::t('admin.operation.attention'), (int) ($summary['attention'] ?? 0), I18n::t('admin.operation.attention_detail')],
         ];
         $out = '';
         foreach ($cards as [$label, $value, $detail]) {
@@ -395,22 +396,22 @@ final class AdminPage
         $statuses = ['', 'Pending', 'Active', 'Suspended', 'Terminated', 'Cancelled', 'Fraud'];
         $options = '';
         foreach ($statuses as $value) {
-            $label = $value === '' ? 'Todos os status' : $value;
+            $label = $value === '' ? I18n::t('admin.operation.all_statuses') : $value;
             $options .= '<option value="' . self::e($value) . '"'
                 . ($status === $value ? ' selected' : '') . '>' . self::e($label) . '</option>';
         }
         $pages = '';
         foreach ([10, 25, 50] as $value) {
             $pages .= '<option value="' . $value . '"'
-                . ($perPage === $value ? ' selected' : '') . '>' . $value . ' por página</option>';
+                . ($perPage === $value ? ' selected' : '') . '>' . self::e(I18n::t('admin.operation.per_page', ['count' => $value])) . '</option>';
         }
-        return '<form method="get" action="' . self::e($base) . '" class="bcp-operation-filters" aria-label="Filtrar serviços BladeCP">'
+        return '<form method="get" action="' . self::e($base) . '" class="bcp-operation-filters" aria-label="' . self::e(I18n::t('admin.operation.filter_services')) . '">'
             . '<input type="hidden" name="module" value="bladecp"><input type="hidden" name="action" value="operation">'
-            . '<label for="bcp-operation-query"><span>Buscar</span><div class="bcp-fg-c"><input id="bcp-operation-query" type="search" name="query" value="' . self::e($query) . '" placeholder="Serviço, domínio ou produto"></div></label>'
-            . '<label for="bcp-operation-status"><span>Status</span><div class="bcp-fg-c"><select id="bcp-operation-status" name="status">' . $options . '</select></div></label>'
-            . '<label for="bcp-operation-per-page"><span>Exibição</span><div class="bcp-fg-c"><select id="bcp-operation-per-page" name="perPage">' . $pages . '</select></div></label>'
-            . '<button class="btn btn-primary" type="submit">Aplicar filtros</button>'
-            . '<a class="btn btn-default" href="' . self::e($base . '&action=operation') . '">Limpar</a></form>';
+            . '<label for="bcp-operation-query"><span>' . self::e(I18n::t('admin.operation.search')) . '</span><div class="bcp-fg-c"><input id="bcp-operation-query" type="search" name="query" value="' . self::e($query) . '" placeholder="' . self::e(I18n::t('admin.operation.search_placeholder')) . '"></div></label>'
+            . '<label for="bcp-operation-status"><span>' . self::e(I18n::t('admin.common.status')) . '</span><div class="bcp-fg-c"><select id="bcp-operation-status" name="status">' . $options . '</select></div></label>'
+            . '<label for="bcp-operation-per-page"><span>' . self::e(I18n::t('admin.operation.display')) . '</span><div class="bcp-fg-c"><select id="bcp-operation-per-page" name="perPage">' . $pages . '</select></div></label>'
+            . '<button class="btn btn-primary" type="submit">' . self::e(I18n::t('admin.operation.apply_filters')) . '</button>'
+            . '<a class="btn btn-default" href="' . self::e($base . '&action=operation') . '">' . self::e(I18n::t('admin.common.clear')) . '</a></form>';
     }
 
     /** @param array<string,mixed> $services @param array<string,mixed> $filters */
@@ -424,30 +425,30 @@ final class AdminPage
             }
             $id = (int) ($service['serviceId'] ?? 0);
             $detail = $id > 0
-                ? '<a class="btn btn-default" href="' . self::e(self::operationUrl($base, $filters, $id)) . '">Ver histórico</a>'
+                ? '<a class="btn btn-default" href="' . self::e(self::operationUrl($base, $filters, $id)) . '">' . self::e(I18n::t('admin.operation.view_history')) . '</a>'
                 : '';
             $rows .= '<tr><td><strong>#' . $id . '</strong><div class="bcp-csub">'
                 . self::e((string) ($service['domain'] ?? '')) . '</div></td><td><strong>'
                 . self::e((string) ($service['productName'] ?? '')) . '</strong><div class="bcp-csub">'
-                . self::e((string) ($service['productType'] ?? '')) . ' · plano '
+                . self::e((string) ($service['productType'] ?? '')) . ' · ' . self::e(I18n::t('admin.common.plan')) . ' '
                 . self::e((string) ($service['planId'] ?? '')) . '</div></td><td>'
                 . self::serviceStatusBadge((string) ($service['status'] ?? 'Unknown')) . '</td><td>'
-                . self::e((string) ($service['createdAt'] ?? '')) . '<div class="bcp-csub">próximo vencimento: '
+                . self::e((string) ($service['createdAt'] ?? '')) . '<div class="bcp-csub">' . self::e(I18n::t('admin.operation.next_due')) . ': '
                 . self::e((string) ($service['nextDueDate'] ?? '')) . '</div></td><td class="bcp-operation-action">' . $detail . '</td></tr>';
         }
         if ($rows === '') {
-            $rows = '<tr><td colspan="5" class="bcp-chips-empty">Nenhum serviço encontrado para este filtro.</td></tr>';
+            $rows = '<tr><td colspan="5" class="bcp-chips-empty">' . self::e(I18n::t('admin.operation.no_services')) . '</td></tr>';
         }
-        $table = '<section class="bcp-operation-section"><div class="bcp-section-heading"><div><h4>Serviços BladeCP</h4><p>Lista somente leitura, com dados reduzidos ao necessário para acompanhamento.</p></div></div><div class="bcp-tbl-wrap"><table class="bcp-tbl bcp-operation-table"><thead><tr><th scope="col">Serviço</th><th scope="col">Produto</th><th scope="col">Status</th><th scope="col">Datas</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead><tbody>'
+        $table = '<section class="bcp-operation-section"><div class="bcp-section-heading"><div><h4>' . self::e(I18n::t('admin.operation.services_title')) . '</h4><p>' . self::e(I18n::t('admin.operation.services_read_only')) . '</p></div></div><div class="bcp-tbl-wrap"><table class="bcp-tbl bcp-operation-table"><thead><tr><th scope="col">' . self::e(I18n::t('admin.operation.service')) . '</th><th scope="col">' . self::e(I18n::t('admin.common.product')) . '</th><th scope="col">' . self::e(I18n::t('admin.common.status')) . '</th><th scope="col">' . self::e(I18n::t('admin.operation.dates')) . '</th><th scope="col"><span class="sr-only">' . self::e(I18n::t('admin.common.actions')) . '</span></th></tr></thead><tbody>'
             . $rows . '</tbody></table></div>';
         $page = max(1, (int) ($services['page'] ?? 1));
         $perPage = max(1, (int) ($services['perPage'] ?? 25));
         $total = max(0, (int) ($services['total'] ?? 0));
         $pages = max(1, (int) ceil($total / $perPage));
         if ($pages > 1) {
-            $table .= '<div class="bcp-actions bcp-mkt-pager"><span class="bcp-row-v">Página ' . $page . ' de ' . $pages . ' · ' . $total . ' serviço(s)</span>'
-                . ($page > 1 ? '<a class="btn btn-default" href="' . self::e(self::operationUrl($base, $filters, 0, $page - 1)) . '">Anterior</a>' : '')
-                . ($page < $pages ? '<a class="btn btn-default" href="' . self::e(self::operationUrl($base, $filters, 0, $page + 1)) . '">Próxima</a>' : '')
+            $table .= '<div class="bcp-actions bcp-mkt-pager"><span class="bcp-row-v">' . self::e(I18n::t('admin.operation.page', ['page' => $page, 'pages' => $pages, 'total' => $total])) . '</span>'
+                . ($page > 1 ? '<a class="btn btn-default" href="' . self::e(self::operationUrl($base, $filters, 0, $page - 1)) . '">' . self::e(I18n::t('admin.common.previous')) . '</a>' : '')
+                . ($page < $pages ? '<a class="btn btn-default" href="' . self::e(self::operationUrl($base, $filters, 0, $page + 1)) . '">' . self::e(I18n::t('admin.common.next')) . '</a>' : '')
                 . '</div>';
         }
         return $table . '</section>';
@@ -483,15 +484,15 @@ final class AdminPage
             if (!is_array($entry)) {
                 continue;
             }
-            $status = trim((string) ($entry['status'] ?? 'registrado'));
+            $status = trim((string) ($entry['status'] ?? I18n::t('admin.operation.recorded')));
             $message = trim((string) ($entry['message'] ?? ''));
             $rows .= '<li><span class="bcp-diag-state' . ($status === 'failed' ? ' is-attention' : '') . '">' . self::e($status)
-                . '</span><div><strong>' . self::e((string) ($entry['action'] ?? 'Evento BladeCP')) . '</strong>'
+                . '</span><div><strong>' . self::e((string) ($entry['action'] ?? I18n::t('admin.operation.event'))) . '</strong>'
                 . ($message !== '' ? '<p>' . self::e($message) . '</p>' : '')
                 . '<small>' . self::e((string) ($entry['at'] ?? '')) . '</small></div></li>';
         }
         if ($rows === '') {
-            $rows = '<li><span class="bcp-diag-state is-muted">sem dados</span><div><strong>' . self::e($empty) . '</strong></div></li>';
+            $rows = '<li><span class="bcp-diag-state is-muted">' . self::e(I18n::t('admin.operation.no_data')) . '</span><div><strong>' . self::e($empty) . '</strong></div></li>';
         }
         return '<section class="bcp-operation-section"><h4>' . self::e($title) . '</h4><ul class="bcp-diagnostic-list">' . $rows . '</ul></section>';
     }
@@ -509,23 +510,23 @@ final class AdminPage
         $service = is_array($timeline['service'] ?? null) ? $timeline['service'] : null;
         $items = is_array($timeline['items'] ?? null) ? $timeline['items'] : [];
         $title = $service === null
-            ? 'Histórico do serviço'
-            : 'Histórico do serviço #' . (int) ($service['serviceId'] ?? $serviceId);
+            ? I18n::t('admin.operation.service_history')
+            : I18n::t('admin.operation.service_history_number', ['id' => (int) ($service['serviceId'] ?? $serviceId)]);
         $rows = '';
         foreach ($items as $item) {
             if (!is_array($item)) {
                 continue;
             }
-            $rows .= '<li><span class="bcp-diag-state">' . self::e((string) ($item['kind'] ?? 'registrado')) . '</span><div><strong>'
-                . self::e((string) ($item['title'] ?? 'Evento BladeCP')) . '</strong><p>'
+            $rows .= '<li><span class="bcp-diag-state">' . self::e((string) ($item['kind'] ?? I18n::t('admin.operation.recorded'))) . '</span><div><strong>'
+                . self::e((string) ($item['title'] ?? I18n::t('admin.operation.event'))) . '</strong><p>'
                 . self::e((string) ($item['detail'] ?? '')) . '</p><small>' . self::e((string) ($item['at'] ?? '')) . '</small></div></li>';
         }
         if ($rows === '') {
-            $rows = '<li><span class="bcp-diag-state is-muted">sem eventos</span><div><strong>Não há evidências correlacionáveis disponíveis.</strong><p>A ausência de registros não confirma nem invalida uma operação.</p></div></li>';
+            $rows = '<li><span class="bcp-diag-state is-muted">' . self::e(I18n::t('admin.operation.no_events')) . '</span><div><strong>' . self::e(I18n::t('admin.operation.no_evidence')) . '</strong><p>' . self::e(I18n::t('admin.operation.no_evidence_detail')) . '</p></div></li>';
         }
         return '<section class="bcp-operation-section bcp-operation-timeline"><div class="bcp-section-heading"><div><h4>' . self::e($title) . '</h4>'
             . ($service !== null ? '<p>' . self::e((string) ($service['productName'] ?? '')) . ' · ' . self::e((string) ($service['domain'] ?? '')) . '</p>' : '')
-            . '</div><a class="btn btn-default" href="' . self::e($base . '&action=operation') . '">Fechar histórico</a></div><ul class="bcp-diagnostic-list">' . $rows . '</ul></section>';
+            . '</div><a class="btn btn-default" href="' . self::e($base . '&action=operation') . '">' . self::e(I18n::t('admin.operation.close_history')) . '</a></div><ul class="bcp-diagnostic-list">' . $rows . '</ul></section>';
     }
 
     private static function serviceStatusBadge(string $status): string
@@ -547,9 +548,8 @@ final class AdminPage
     private static function plansView(string $base): string
     {
         $h = self::header(
-            'Planos BladeCP',
-            'Importa os planos do catálogo BladeCP como categorias e produtos no WHMCS, '
-            . 'preservando seus nomes. Idempotente; nunca apaga.'
+            I18n::t('admin.plans.title'),
+            I18n::t('admin.plans.header_detail')
         );
         $tabs = self::tabs($base, 'planos');
 
@@ -557,72 +557,65 @@ final class AdminPage
         if (isset($_GET['imported'])) {
             $n = (int) $_GET['imported'];
             $flash = '<div class="bcp-badge is-ok">'
-                . ($n === 1 ? '1 plano importado.' : $n . ' planos importados.')
+                . self::e(I18n::t('admin.plans.imported', ['count' => $n]))
                 . '</div>';
         }
         if (isset($_GET['blocked']) && (int) $_GET['blocked'] > 0) {
             $n = (int) $_GET['blocked'];
             $flash .= '<div class="bcp-badge is-warn">' . $n
-                . ' plano(s) foram ignorados porque a Customer API os '
-                . 'marcou como não suportados.</div>';
+                . self::e(I18n::t('admin.plans.blocked_import', ['count' => $n])) . '</div>';
         }
         if (isset($_GET['reordered'])) {
-            $flash .= '<div class="bcp-badge is-ok">Catálogo reordenado ('
-                . (int) $_GET['reordered'] . ' produto(s)) — a vitrine segue a '
-                . 'ordem dos planos.</div>';
+            $flash .= '<div class="bcp-badge is-ok">' . self::e(I18n::t('admin.plans.reordered', ['count' => (int) $_GET['reordered']])) . '</div>';
         }
         if (isset($_GET['linked'])) {
             $n = (int) $_GET['linked'];
             $flash .= '<div class="bcp-badge is-ok">'
-                . ($n === 1 ? '1 produto vinculado' : $n . ' produtos vinculados')
-                . ' aos componentes.</div>';
+                . self::e(I18n::t('admin.plans.linked', ['count' => $n])) . '</div>';
         }
         if (isset($_GET['nolinkgroup'])) {
-            $flash .= '<div class="bcp-badge is-warn">Sincronize os componentes '
-                . 'primeiro (aba Componentes) para poder vinculá-los aos produtos.</div>';
+            $flash .= '<div class="bcp-badge is-warn">' . self::e(I18n::t('admin.plans.sync_components_first')) . '</div>';
         }
         if (isset($_GET['modeset'])) {
             $n = (int) $_GET['modeset'];
-            $flash .= '<div class="bcp-badge is-ok">Modo salvo'
-                . ($n > 0 ? ' e aplicado a ' . $n . ' produto(s) existente(s)' : '')
-                . '.</div>';
+            $flash .= '<div class="bcp-badge is-ok">' . self::e(I18n::t('admin.plans.mode_saved', ['count' => $n])) . '</div>';
         }
         if (isset($_GET['catalog_mode_saved'])) {
             $saved = (int) $_GET['catalog_mode_saved'] === 1;
             $mode = (string) $_GET['catalog_mode'];
             $flash .= '<div class="bcp-badge ' . ($saved ? 'is-ok' : 'is-warn') . '">'
                 . ($saved
-                    ? 'Modo de disponibilidade salvo: '
-                        . self::e($mode === 'enforce' ? 'aplicar e ocultar produtos bloqueados' : 'observar e proteger vendas')
-                        . '.'
-                    : 'Não foi possível salvar o modo de disponibilidade. A configuração anterior foi preservada.')
+                    ? self::e(I18n::t('admin.plans.availability_saved', ['mode' => I18n::t($mode === 'enforce' ? 'admin.plans.availability_enforce' : 'admin.plans.availability_observe')]))
+                    : self::e(I18n::t('admin.plans.availability_save_failed')))
                 . '</div>';
         }
         if (isset($_GET['reconciled'])) {
             $ok = (int) $_GET['reconciled'] === 1;
+            $hidden = (int) ($_GET['hidden'] ?? 0);
             $flash .= '<div class="bcp-badge ' . ($ok ? 'is-ok' : 'is-warn') . '">'
                 . ($ok
-                    ? (int) ($_GET['processed'] ?? 0) . ' produto(s) revisados, '
-                        . (int) ($_GET['blocked_now'] ?? 0) . ' bloqueado(s) para novas vendas'
-                        . ((int) ($_GET['hidden'] ?? 0) > 0
-                            ? ', ' . (int) $_GET['hidden'] . ' ocultado(s) pela regra atual' : '') . '.'
-                    : 'Não foi possível reconciliar o catálogo agora. Tente novamente após confirmar a conexão.')
+                    ? I18n::t('admin.plans.reconciled', [
+                        'processed' => (int) ($_GET['processed'] ?? 0),
+                        'blocked' => (int) ($_GET['blocked_now'] ?? 0),
+                        'hidden_note' => $hidden > 0
+                            ? I18n::t('admin.plans.reconciled_hidden', ['count' => $hidden])
+                            : '',
+                    ])
+                    : I18n::t('admin.plans.reconcile_failed'))
                 . '</div>';
         }
         if (isset($_GET['sale_released'])) {
             $released = (int) $_GET['sale_released'] === 1;
             $flash .= '<div class="bcp-badge ' . ($released ? 'is-ok' : 'is-warn') . '">'
                 . ($released
-                    ? 'Venda liberada após a reconciliação. O produto voltou para a vitrine.'
-                    : 'A venda não foi liberada. Revise a disponibilidade atual e tente reconciliar o catálogo antes de liberar.')
+                    ? self::e(I18n::t('admin.plans.sale_released'))
+                    : self::e(I18n::t('admin.plans.sale_release_failed')))
                 . '</div>';
         }
 
         $plans = PlanSync::plans();
         if ($plans === []) {
-            return self::card($h, $tabs . $flash . '<p class="bcp-row-v">Nenhum plano '
-                . 'carregado. Confira se o servidor BladeCP está conectado (aba '
-                . '<strong>Configuração rápida</strong>) e se há planos disponíveis no catálogo BladeCP.</p>');
+            return self::card($h, $tabs . $flash . '<p class="bcp-row-v">' . self::e(I18n::t('admin.plans.empty')) . '</p>');
         }
 
         $existing = PlanSync::existingByPlan();
@@ -663,31 +656,30 @@ final class AdminPage
                 . self::token()
                 . '<input type="hidden" name="action" value="plans-import-all">'
                 . '<button class="btn btn-primary" type="submit">' . self::ic('download')
-                . 'Importar ' . $missing . ' plano(s) que faltam</button></form>';
+                . self::e(I18n::t('admin.plans.import_missing', ['count' => $missing])) . '</button></form>';
         } else {
-            $actions .= '<span class="bcp-badge is-ok">Todos os planos '
-                . 'suportados já estão no WHMCS.</span>';
+            $actions .= '<span class="bcp-badge is-ok">' . self::e(I18n::t('admin.plans.all_imported')) . '</span>';
         }
         if ($blocked > 0) {
             $actions .= ' <span class="bcp-badge is-warn">' . $blocked
-                . ' plano(s) bloqueado(s) pelo contrato Customer API.</span>';
+                . self::e(I18n::t('admin.plans.blocked_contract', ['count' => $blocked])) . '</span>';
         }
         $actions .= ' <form method="post" action="' . self::e($base) . '" style="display:inline">'
             . self::token()
             . '<input type="hidden" name="action" value="plans-reorder">'
             . '<button class="btn btn-default" type="submit">' . self::ic('refresh')
-            . 'Reordenar catálogo</button></form>';
+            . self::e(I18n::t('admin.plans.reorder_catalog')) . '</button></form>';
         $actions .= ' <form method="post" action="' . self::e($base) . '" style="display:inline">'
             . self::token()
             . '<input type="hidden" name="action" value="catalog-reconcile">'
             . '<button class="btn btn-default" type="submit">' . self::ic('refresh')
-            . 'Revisar disponibilidade</button></form>';
+            . self::e(I18n::t('admin.plans.review_availability')) . '</button></form>';
         if ($hasCompGroup && $unlinked > 0 && $importCombo === null) {
             $actions .= ' <form method="post" action="' . self::e($base) . '" style="display:inline">'
                 . self::token()
                 . '<input type="hidden" name="action" value="plans-link">'
                 . '<button class="btn btn-default" type="submit">' . self::ic('plug')
-                . 'Vincular componentes (' . $unlinked . ' sem vínculo)</button></form>';
+                . self::e(I18n::t('admin.plans.link_components', ['count' => $unlinked])) . '</button></form>';
         }
         $actions .= '</div>';
 
@@ -710,17 +702,12 @@ final class AdminPage
             $tables .= '<h4 class="bcp-setup-h" style="margin:18px 0 8px">'
                 . self::e($group) . '</h4>'
                 . self::planGroupNotice($rows)
-                . '<div class="bcp-tbl-wrap"><table class="bcp-tbl bcp-plans"><thead><tr><th scope="col">Plano</th><th scope="col">Recursos</th>'
-                . '<th scope="col" style="text-align:right">Status</th></tr></thead><tbody>'
+                . '<div class="bcp-tbl-wrap"><table class="bcp-tbl bcp-plans"><thead><tr><th scope="col">' . self::e(I18n::t('admin.common.plan')) . '</th><th scope="col">' . self::e(I18n::t('admin.plans.resources')) . '</th>'
+                . '<th scope="col" style="text-align:right">' . self::e(I18n::t('admin.common.status')) . '</th></tr></thead><tbody>'
                 . $tr . '</tbody></table></div>';
         }
 
-        $note = '<p class="bcp-setup-hint" style="margin-top:16px">O produto nasce '
-            . 'sem preço (você precifica na aba <strong>Tabela de preços</strong>). '
-            . 'A descrição vem dos dados do plano só quando está vazia. Sua edição é '
-            . 'preservada. Grupos e produtos nunca são apagados. Planos '
-            . 'bloqueados vêm marcados pela Customer API e não podem ser '
-            . 'importados até o contrato publicá-los como suportados.</p>';
+        $note = '<p class="bcp-setup-hint" style="margin-top:16px">' . self::e(I18n::t('admin.plans.note')) . '</p>';
 
         // Modo de importação: Composável (cliente escolhe) vs Simples
         // (combo fixo, sem opções no carrinho — pro mercado clássico).
@@ -729,29 +716,28 @@ final class AdminPage
         if ($combos !== []) {
             $cur = $importCombo;
             $opts = '<option value="0"' . ($cur === null ? ' selected' : '')
-                . '>Composável — o cliente escolhe os componentes</option>';
+                . '>' . self::e(I18n::t('admin.plans.composable')) . '</option>';
             foreach ($combos as $c) {
                 $opts .= '<option value="' . (int) $c['id'] . '"'
-                    . ((int) $c['id'] === $cur ? ' selected' : '') . '>Simples — combo "'
-                    . self::e($c['name']) . '" (componentes fixos, sem opções no carrinho)</option>';
+                    . ((int) $c['id'] === $cur ? ' selected' : '') . '>' . self::e(I18n::t('admin.plans.simple_combo', ['name' => $c['name']])) . '</option>';
             }
             $modeForm = '<form method="post" action="' . self::e($base) . '" '
                 . 'style="margin:0 0 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
                 . self::token()
                 . '<input type="hidden" name="action" value="plans-set-mode">'
-                . '<strong>Modo de importação:</strong>'
+                . '<strong>' . self::e(I18n::t('admin.plans.import_mode')) . '</strong>'
                 . '<div class="bcp-fg-c bcp-mode-select">'
-                . '<label class="sr-only" for="bcp-import-mode">Modo de importação</label><select id="bcp-import-mode" name="import_mode">' . $opts . '</select></div>'
+                . '<label class="sr-only" for="bcp-import-mode">' . self::e(I18n::t('admin.plans.import_mode')) . '</label><select id="bcp-import-mode" name="import_mode">' . $opts . '</select></div>'
                 . '<button class="btn btn-default" type="submit">' . self::ic('check')
-                . 'Salvar</button></form>';
+                . self::e(I18n::t('admin.common.save')) . '</button></form>';
         }
 
-        $availabilityMode = '<section class="bcp-catalog-mode" aria-labelledby="bcp-catalog-mode-title"><div><span class="bcp-eyebrow">DISPONIBILIDADE DE VENDA</span><h4 id="bcp-catalog-mode-title">Como aplicar planos indisponíveis</h4><p>Nos dois modos, o módulo registra a decisão e bloqueia carrinho e provisionamento quando não for seguro vender. Não existe modo desligado.</p></div><form method="post" action="'
+        $availabilityMode = '<section class="bcp-catalog-mode" aria-labelledby="bcp-catalog-mode-title"><div><span class="bcp-eyebrow">' . self::e(I18n::t('admin.plans.availability_eyebrow')) . '</span><h4 id="bcp-catalog-mode-title">' . self::e(I18n::t('admin.plans.availability_title')) . '</h4><p>' . self::e(I18n::t('admin.plans.availability_detail')) . '</p></div><form method="post" action="'
             . self::e($base) . '" class="bcp-catalog-mode-form">' . self::token()
-            . '<input type="hidden" name="action" value="catalog-mode"><label for="bcp-catalog-mode">Modo</label><div class="bcp-fg-c bcp-catalog-mode-select"><select id="bcp-catalog-mode" name="catalog_mode">'
-            . '<option value="observe"' . ($catalogMode === 'observe' ? ' selected' : '') . '>Observar: bloqueia carrinho e provisionamento, preserva a vitrine</option>'
-            . '<option value="enforce"' . ($catalogMode === 'enforce' ? ' selected' : '') . '>Aplicar: bloqueia e também oculta produtos bloqueados</option>'
-            . '</select></div><button class="btn btn-default" type="submit">Salvar modo</button></form></section>';
+            . '<input type="hidden" name="action" value="catalog-mode"><label for="bcp-catalog-mode">' . self::e(I18n::t('admin.plans.mode')) . '</label><div class="bcp-fg-c bcp-catalog-mode-select"><select id="bcp-catalog-mode" name="catalog_mode">'
+            . '<option value="observe"' . ($catalogMode === 'observe' ? ' selected' : '') . '>' . self::e(I18n::t('admin.plans.availability_observe_option')) . '</option>'
+            . '<option value="enforce"' . ($catalogMode === 'enforce' ? ' selected' : '') . '>' . self::e(I18n::t('admin.plans.availability_enforce_option')) . '</option>'
+            . '</select></div><button class="btn btn-default" type="submit">' . self::e(I18n::t('admin.common.save')) . '</button></form></section>';
 
         return self::card($h, $tabs . $flash . $availabilityMode . $modeForm . $actions . $tables . $note);
     }
@@ -771,7 +757,7 @@ final class AdminPage
                 $blocked++;
                 $reason = trim((string) ($plan['reason'] ?? ''));
                 if ($reason === '') {
-                    $reason = 'O catálogo não informou um motivo detalhado.';
+                    $reason = I18n::t('admin.plans.no_detailed_reason');
                 }
                 $reasons[$reason] = ($reasons[$reason] ?? 0) + 1;
             }
@@ -780,18 +766,16 @@ final class AdminPage
             return '';
         }
 
-        $label = $blocked === 1
-            ? '1 plano indisponível para provisionamento.'
-            : $blocked . ' planos indisponíveis para provisionamento.';
+        $label = I18n::t('admin.plans.unavailable_count', ['count' => $blocked]);
         $reasonHtml = '';
         foreach ($reasons as $reason => $count) {
             $reasonHtml .= '<li>'
-                . (count($reasons) > 1 ? '<strong>' . $count . ' plano(s):</strong> ' : '')
+                . (count($reasons) > 1 ? '<strong>' . self::e(I18n::t('admin.plans.plan_count', ['count' => $count])) . '</strong> ' : '')
                 . self::e($reason) . '</li>';
         }
 
         return '<div class="bcp-plan-group-note"><strong>' . $label . '</strong>'
-            . '<span>Produtos existentes no WHMCS foram preservados.</span>'
+            . '<span>' . self::e(I18n::t('admin.plans.existing_preserved')) . '</span>'
             . '<ul>' . $reasonHtml . '</ul></div>';
     }
 
@@ -811,14 +795,13 @@ final class AdminPage
         $state = $productId > 0 ? CatalogStateRepository::find($productId) : null;
         $release = self::catalogReleaseControl($base, $productId, $state);
         if (!$supported) {
-            $badge = '<span class="bcp-badge is-warn" title="Novos '
-                . 'provisionamentos estão bloqueados para este plano">'
-                . 'indisponível</span>';
+            $badge = '<span class="bcp-badge is-warn" title="' . self::e(I18n::t('admin.plans.provisioning_blocked')) . '">'
+                . self::e(I18n::t('admin.plans.unavailable')) . '</span>';
             $productLink = $created && $productId > 0
                 ? '<a class="bcp-plan-product-link" href="'
                     . self::e('configproducts.php?action=edit&id=' . $productId)
-                    . '" aria-label="Abrir produto WHMCS ' . self::e($plan['name'] ?? '')
-                    . '">Produto WHMCS</a>'
+                    . '" aria-label="' . self::e(I18n::t('admin.plans.open_product', ['name' => (string) ($plan['name'] ?? '')])) . '">'
+                    . self::e(I18n::t('admin.plans.whmcs_product')) . '</a>'
                 : '';
 
             return '<td class="bcp-plan-status"><div class="bcp-plan-status-stack">'
@@ -828,7 +811,7 @@ final class AdminPage
         if ($created && $productId > 0) {
             return '<td class="bcp-plan-status"><div class="bcp-plan-status-stack"><a class="bcp-plan-status-link" href="'
                 . self::e('configproducts.php?action=edit&id=' . $productId)
-                . '"><span class="bcp-badge is-ok">criado</span></a>' . $release
+                . '"><span class="bcp-badge is-ok">' . self::e(I18n::t('admin.plans.created')) . '</span></a>' . $release
                 . '</div></td>';
         }
 
@@ -838,7 +821,7 @@ final class AdminPage
             . '<input type="hidden" name="action" value="plan-import">'
             . '<input type="hidden" name="plan" value="' . self::e($plan['id'] ?? '') . '">'
             . '<button class="btn btn-default" type="submit">' . self::ic('plus')
-            . 'Importar</button></form></td>';
+            . self::e(I18n::t('admin.common.import')) . '</button></form></td>';
     }
 
     /** @param array<string,mixed>|null $state */
@@ -849,30 +832,29 @@ final class AdminPage
         }
 
         return '<form method="post" action="' . self::e($base)
-            . '" class="bcp-plan-release" onsubmit="return confirm(\'Confirmar a liberação deste produto para venda? A elegibilidade atual registrada será confirmada antes de reexibir a vitrine.\')">'
+            . '" class="bcp-plan-release" onsubmit="return confirm(\'' . self::e(I18n::t('admin.plans.release_confirm')) . '\')">'
             . self::token()
             . '<input type="hidden" name="action" value="catalog-approve-sale">'
             . '<input type="hidden" name="pid" value="' . $productId . '">'
-            . '<button class="btn btn-default" type="submit">Liberar venda</button></form>';
+            . '<button class="btn btn-default" type="submit">' . self::e(I18n::t('admin.plans.release_sale')) . '</button></form>';
     }
 
     private static function listView(string $base, int $pid): string
     {
         $combos = Combos::all();
         $h = self::header(
-            'Addon BladeCP',
-            'Combos de componentes, sincronização do order form e '
-                . 'tabela de preços. Credenciais ficam no Server record.'
+            I18n::t('admin.combos.title'),
+            I18n::t('admin.combos.header_detail')
         );
 
         $ctx = $pid > 0 ? self::productContext($base, $pid, $combos) : '';
         $flash = '';
         if (isset($_GET['saved'])) {
-            $flash = '<div class="bcp-badge is-ok">Combo salvo.</div>';
+            $flash = '<div class="bcp-badge is-ok">' . self::e(I18n::t('admin.combos.saved')) . '</div>';
         } elseif (isset($_GET['deleted'])) {
-            $flash = '<div class="bcp-badge is-ok">Combo excluído.</div>';
+            $flash = '<div class="bcp-badge is-ok">' . self::e(I18n::t('admin.combos.deleted')) . '</div>';
         } elseif (isset($_GET['assigned'])) {
-            $flash = '<div class="bcp-badge is-ok">Combo atribuído ao produto.</div>';
+            $flash = '<div class="bcp-badge is-ok">' . self::e(I18n::t('admin.combos.assigned')) . '</div>';
         }
 
         // Resolve os tokens `slug@versionId` salvos → nome do
@@ -918,19 +900,19 @@ final class AdminPage
                 . '</div></td><td>' . ($chips !== '' ? $chips : '—')
                 . '</td><td style="text-align:right;white-space:nowrap">'
                 . '<a class="btn btn-default" href="' . self::e($base)
-                . '&action=edit&id=' . (int) $c['id'] . '">' . self::ic('pencil') . 'Editar</a> '
+                . '&action=edit&id=' . (int) $c['id'] . '">' . self::ic('pencil') . self::e(I18n::t('admin.common.edit')) . '</a> '
                 . self::postBtn(
                     $base,
                     'delete',
                     ['id' => (string) $c['id']],
-                    'Excluir',
-                    'Excluir o combo "' . $c['name'] . '"?'
+                    I18n::t('admin.common.delete'),
+                    I18n::t('admin.combos.delete_confirm', ['name' => $c['name']])
                 )
                 . '</td></tr>';
         }
         if ($rows === '') {
             $rows = '<tr><td colspan="3" class="bcp-chips-empty">'
-                . 'Nenhum combo ainda. Crie o primeiro.</td></tr>';
+                . self::e(I18n::t('admin.combos.empty')) . '</td></tr>';
         }
 
         // "Sincronizar componentes"/"Tabela de preços" agora são TABS
@@ -938,9 +920,9 @@ final class AdminPage
         $table = '<div class="bcp-actions"><a class="btn btn-primary" '
             . 'href="' . self::e($base) . '&action=new'
             . ($pid > 0 ? '&pid=' . $pid : '')
-            . '">' . self::ic('plus') . 'Novo combo</a></div>'
-            . '<div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">Combo</th>'
-            . '<th scope="col">Componentes</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead><tbody>'
+            . '">' . self::ic('plus') . self::e(I18n::t('admin.combos.new')) . '</a></div>'
+            . '<div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">' . self::e(I18n::t('admin.combos.combo')) . '</th>'
+            . '<th scope="col">' . self::e(I18n::t('admin.combos.components')) . '</th><th scope="col"><span class="sr-only">' . self::e(I18n::t('admin.common.actions')) . '</span></th></tr></thead><tbody>'
             . $rows . '</tbody></table></div>';
 
         return self::card($h, self::tabs($base, 'combos') . $ctx . $flash . $table);
@@ -953,29 +935,27 @@ final class AdminPage
     ): string {
         $name = self::productName($pid);
         $current = Combos::comboIdForProduct($pid);
-        $opts = '<option value="">— Nenhum (só componentes avulsos) —</option>';
+        $opts = '<option value="">' . self::e(I18n::t('admin.combos.none')) . '</option>';
         foreach ($combos as $c) {
             $sel = $current === $c['id'] ? ' selected' : '';
             $opts .= '<option value="' . (int) $c['id'] . '"' . $sel . '>'
                 . self::e($c['name']) . '</option>';
         }
         return '<div class="bcp-prodctx"><div class="bcp-sec">'
-            . 'Produto WHMCS</div><p class="bcp-row-v">Configurando o '
-            . 'combo de <strong>' . self::e($name) . '</strong> '
-            . '(#' . $pid . '). O provisionamento expande os '
-            . 'componentes do combo + os avulsos do produto.</p>'
+            . self::e(I18n::t('admin.combos.whmcs_product')) . '</div><p class="bcp-row-v">'
+            . self::e(I18n::t('admin.combos.context_detail', ['name' => $name, 'id' => $pid])) . '</p>'
             . '<form method="post" action="' . self::e($base) . '">'
             . self::token()
             . '<input type="hidden" name="action" value="assign">'
             . '<input type="hidden" name="pid" value="' . $pid . '">'
             . '<div class="bcp-fg"><label class="bcp-fg-l" for="bcp-product-combo-id">'
-            . 'Combo deste produto</label><div class="bcp-fg-c">'
+            . self::e(I18n::t('admin.combos.product_combo')) . '</label><div class="bcp-fg-c">'
             . '<select id="bcp-product-combo-id" name="combo_id">' . $opts . '</select></div></div>'
             . '<div class="bcp-actions"><button class="btn btn-primary" '
-            . 'type="submit">' . self::ic('check') . 'Salvar atribuição</button>'
+            . 'type="submit">' . self::ic('check') . self::e(I18n::t('admin.combos.save_assignment')) . '</button>'
             . '<a class="btn btn-default" href="configproducts.php?action=edit&id='
             . $pid . '">' . self::ic('arrow-left')
-            . 'Voltar ao produto</a></div></form>'
+            . self::e(I18n::t('admin.common.back_to_product')) . '</a></div></form>'
             . '<hr class="bcp-hr"></div>';
     }
 
@@ -991,19 +971,17 @@ final class AdminPage
             $picker = self::catalogPicker($catalog, $selected);
         } else {
             $picker = '<div class="bcp-fg"><label class="bcp-fg-l" for="bcp-components-csv">'
-                . 'Componentes (slugs separados por vírgula)</label>'
+                . self::e(I18n::t('admin.combos.components_csv')) . '</label>'
                 . '<div class="bcp-fg-c"><textarea id="bcp-components-csv" name="components_csv" '
                 . 'rows="3" placeholder="php-8.2,mysql,redis">'
                 . self::e(implode(',', $selected)) . '</textarea></div>'
-                . '<small class="bcp-fg-d">Catálogo indisponível '
-                . '(sem Server record/key/rede) — informe os slugs '
-                . 'manualmente. São validados no provisionamento.</small>'
+                . '<small class="bcp-fg-d">' . self::e(I18n::t('admin.combos.catalog_unavailable')) . '</small>'
                 . '</div>';
         }
 
         $h = self::header(
-            $id > 0 ? 'Editar combo' : 'Novo combo',
-            'Um combo agrupa slugs de componentes do catálogo BladeCP.'
+            $id > 0 ? I18n::t('admin.combos.edit') : I18n::t('admin.combos.new'),
+            I18n::t('admin.combos.form_detail')
         );
         $form = '<form method="post" action="' . self::e($base) . '">'
             . self::token()
@@ -1012,22 +990,22 @@ final class AdminPage
             . ($pid > 0
                 ? '<input type="hidden" name="pid" value="' . $pid . '">'
                 : '')
-            . '<div class="bcp-fg"><label class="bcp-fg-l" for="bcp-combo-name">Nome</label>'
+            . '<div class="bcp-fg"><label class="bcp-fg-l" for="bcp-combo-name">' . self::e(I18n::t('admin.common.name')) . '</label>'
             . '<div class="bcp-fg-c"><input id="bcp-combo-name" type="text" name="name" '
             . 'value="' . self::e($name) . '" placeholder="Ex.: LAMP 8.2" '
             . 'required></div></div>' . $picker
             . '<div class="bcp-actions"><button class="btn btn-primary" '
-            . 'type="submit">' . self::ic('check') . 'Salvar</button>'
+            . 'type="submit">' . self::ic('check') . self::e(I18n::t('admin.common.save')) . '</button>'
             // Novo/editar combo é DRILL-DOWN da aba Combos (a aba
             // ativa não sinaliza "clique p/ voltar à lista") → mantém
             // "Voltar" p/ a lista. Com pid, volta ao produto.
             . ($pid > 0
                 ? '<a class="btn btn-default" href="configproducts.php'
                     . '?action=edit&id=' . $pid . '">'
-                    . self::ic('arrow-left') . 'Voltar ao produto</a>'
+                    . self::ic('arrow-left') . self::e(I18n::t('admin.common.back_to_product')) . '</a>'
                 : '<a class="btn btn-default" href="' . self::e($base)
                     . '">' . self::ic('arrow-left')
-                    . 'Voltar aos combos</a>')
+                    . self::e(I18n::t('admin.combos.back_to_combos')) . '</a>')
             . '</div></form>';
 
         return self::card($h, self::tabs($base, 'combos') . $form);
@@ -1077,12 +1055,12 @@ final class AdminPage
                     foreach ($versions as $v) {
                         $s = ((int) $chosen === $v['id']) ? ' selected' : '';
                         $lbl = (string) $v['label']
-                            . ($v['is_default'] ? ' (default)' : '');
+                            . ($v['is_default'] ? ' (' . I18n::t('admin.components.default') . ')' : '');
                         $o .= '<option value="' . (int) $v['id'] . '"'
                             . $s . '>' . self::e($lbl) . '</option>';
                     }
-                    $verSel = '<select class="bcp-cver" aria-label="Versão de '
-                        . self::e((string) $it['name']) . '" name="cver['
+                    $verSel = '<select class="bcp-cver" aria-label="'
+                        . self::e(I18n::t('admin.components.version_of', ['name' => (string) $it['name']])) . '" name="cver['
                         . self::e($slug) . ']">' . $o . '</select>';
                 } elseif (count($versions) === 1) {
                     $v0 = $versions[0];
@@ -1106,10 +1084,9 @@ final class AdminPage
             $body .= '<div class="bcp-pick-grp">' . self::e((string) $cat)
                 . '</div><div class="bcp-pick-grid">' . $opts . '</div>';
         }
-        return '<div class="bcp-fg"><span id="bcp-components-label" class="bcp-fg-l">Componentes'
+        return '<div class="bcp-fg"><span id="bcp-components-label" class="bcp-fg-l">' . self::e(I18n::t('admin.components.label'))
             . '</span><div class="bcp-pick" role="group" aria-labelledby="bcp-components-label">' . $body . '</div>'
-            . '<small class="bcp-fg-d">Catálogo global da BladeCP. A '
-            . 'allowlist por produto é aplicada no provisionamento.'
+            . '<small class="bcp-fg-d">' . self::e(I18n::t('admin.components.catalog_detail'))
             . '</small></div>';
     }
 
@@ -1140,34 +1117,27 @@ final class AdminPage
     private static function pricingView(string $base, int $pid): string
     {
         $h = self::header(
-            'Importar preço do plano BladeCP',
-            'Pré-preenchimento opt-in. Revise o diff e confirme. '
-                . 'Não há sync automático.'
+            I18n::t('admin.pricing.title'),
+            I18n::t('admin.pricing.header_detail')
         );
         $back = '<div class="bcp-actions"><a class="btn btn-default" '
             . 'href="configproducts.php?action=edit&id=' . $pid
-            . '#tab=2">' . self::ic('arrow-left') . 'Voltar ao produto (aba Pricing)</a></div>';
+            . '#tab=2">' . self::ic('arrow-left') . self::e(I18n::t('admin.pricing.back')) . '</a></div>';
 
         if ($pid <= 0) {
-            return self::card($h, '<p class="bcp-row-v">Abra a partir '
-                . 'de um produto.</p>' . $back);
+            return self::card($h, '<p class="bcp-row-v">' . self::e(I18n::t('admin.pricing.open_from_product')) . '</p>' . $back);
         }
         $planId = Pricing::planIdForProduct($pid);
         if ($planId === null) {
-            return self::card($h, '<p class="bcp-row-v">Configure o '
-                . 'ConfigOption <strong>BladeCP Plan</strong> no produto '
-                . 'antes de importar o preço.</p>' . $back);
+            return self::card($h, '<p class="bcp-row-v">' . self::e(I18n::t('admin.pricing.configure_plan_before_import')) . '</p>' . $back);
         }
         $matched = self::matchedCurrencies($planId);
         if ($matched === []) {
-            return self::card($h, '<p class="bcp-row-v">Não foi '
-                . 'possível obter o preço do plano (verifique a conexão / '
-                . 'Server record) ou nenhuma moeda do plano coincide com '
-                . 'as moedas do WHMCS.</p>' . $back);
+            return self::card($h, '<p class="bcp-row-v">' . self::e(I18n::t('admin.pricing.unavailable')) . '</p>' . $back);
         }
 
         $done = isset($_GET['done'])
-            ? '<div class="bcp-badge is-ok">Preço importado.</div>'
+            ? '<div class="bcp-badge is-ok">' . self::e(I18n::t('admin.pricing.imported')) . '</div>'
             : '';
 
         $blocks = '';
@@ -1187,14 +1157,14 @@ final class AdminPage
                         : self::money($d['old'], $m['code']))
                     . '</td><td>' . self::money($d['new'], $m['code'])
                     . '</td><td>' . ($d['changed']
-                        ? '<span class="bcp-pill on">muda</span>'
-                        : '<span class="bcp-pill off">igual</span>')
+                        ? '<span class="bcp-pill on">' . self::e(I18n::t('admin.pricing.changed')) . '</span>'
+                        : '<span class="bcp-pill off">' . self::e(I18n::t('admin.pricing.same')) . '</span>')
                     . '</td></tr>';
             }
             $blocks .= '<div class="bcp-sec">' . self::e($m['code'])
-                . '</div><div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">Ciclo</th>'
-                . '<th scope="col">WHMCS atual</th><th scope="col">Sugerido (plano)</th>'
-                . '<th scope="col"><span class="sr-only">Comparação</span></th></tr></thead><tbody>' . $rows
+                . '</div><div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">' . self::e(I18n::t('admin.pricing.cycle')) . '</th>'
+                . '<th scope="col">' . self::e(I18n::t('admin.pricing.current_whmcs')) . '</th><th scope="col">' . self::e(I18n::t('admin.pricing.suggested')) . '</th>'
+                . '<th scope="col"><span class="sr-only">' . self::e(I18n::t('admin.pricing.comparison')) . '</span></th></tr></thead><tbody>' . $rows
                 . '</tbody></table></div>';
         }
 
@@ -1204,14 +1174,12 @@ final class AdminPage
             . '<input type="hidden" name="pid" value="' . $pid . '">'
             . '<div class="bcp-actions"><button class="btn btn-primary" '
             . 'type="submit"' . ($anyChange ? '' : ' disabled')
-            . '>' . self::ic('check') . 'Confirmar import</button><a class="btn btn-default" '
+            . '>' . self::ic('check') . self::e(I18n::t('admin.pricing.confirm_import')) . '</button><a class="btn btn-default" '
             . 'href="configproducts.php?action=edit&id=' . $pid
             . '#tab=2">' . self::ic('arrow-left')
-            . 'Cancelar</a></div></form>';
+            . self::e(I18n::t('admin.common.cancel')) . '</a></div></form>';
 
-        $note = '<div class="bcp-chips-note">Grava só os ciclos que o '
-            . 'plano define. Não altera setup fees nem ciclos fora do '
-            . 'plano. Não desabilita nada. Sem sync contínuo.</div>';
+        $note = '<div class="bcp-chips-note">' . self::e(I18n::t('admin.pricing.note')) . '</div>';
 
         return self::card($h, $done . $blocks . $confirm . $note);
     }
@@ -1247,21 +1215,18 @@ final class AdminPage
     private static function pricesView(string $base): string
     {
         $h = self::header(
-            'Tabela de preços — WHMCS × plataforma',
-            'Compara cada produto com o preço do plano na plataforma '
-                . 'BladeCP. Sincronização é MANUAL: só grava ao clicar, '
-                . 'nada automático. Preço de componente não entra aqui.'
+            I18n::t('admin.prices.title'),
+            I18n::t('admin.prices.header_detail')
         );
         $synced = isset($_GET['synced'])
             ? '<div class="bcp-badge is-ok">'
-                . (int) $_GET['synced']
-                . ' produto(s) sincronizado(s).</div>'
+                . self::e(I18n::t('admin.prices.synced', ['count' => (int) $_GET['synced']])) . '</div>'
             : '';
         $products = Pricing::bladecpProducts();
         if ($products === []) {
             return self::card($h, self::tabs($base, 'prices')
                 . $synced . '<p class="bcp-row-v">'
-                . 'Nenhum produto usa o módulo BladeCP ainda.</p>');
+                . self::e(I18n::t('admin.prices.empty')) . '</p>');
         }
 
         // Todas as colunas de ciclo (mesmo sem preço). Ordem/rótulos
@@ -1293,7 +1258,7 @@ final class AdminPage
                     : ($wv === null
                         || abs((float) $wv - (float) $pv) >= 0.005);
                 if ($diff) {
-                    $top .= '<div class="bcp-cwhmcs">WHMCS: '
+                    $top .= '<div class="bcp-cwhmcs">' . self::e(I18n::t('admin.prices.whmcs')) . ': '
                         . ($wv !== null
                             ? self::money((float) $wv, $code)
                             : '—') . '</div>';
@@ -1325,22 +1290,21 @@ final class AdminPage
             $nameCell = '<strong>' . self::e($p['name']) . '</strong>';
             $planId = $p['planId'];
             if ($planId === null) {
-                $emit(['group' => 'Sem plano associado', 'order' => 9999],
+                $emit(['group' => I18n::t('admin.prices.no_plan_group'), 'order' => 9999],
                     '<tr><td>' . $nameCell . '</td><td>—</td>'
                     . '<td colspan="' . $nCyc . '" class="bcp-row-v '
-                    . 'muted">Sem BladeCP Plan configurado</td><td>'
-                    . '<span class="bcp-badge is-warn">sem plano'
+                    . 'muted">' . self::e(I18n::t('admin.prices.no_plan_configured')) . '</td><td>'
+                    . '<span class="bcp-badge is-warn">' . self::e(I18n::t('admin.prices.no_plan'))
                     . '</span></td><td></td></tr>');
                 continue;
             }
-            $cat = $planCat[(string) $planId] ?? ['group' => 'Outros', 'order' => 9998];
+            $cat = $planCat[(string) $planId] ?? ['group' => I18n::t('admin.prices.other'), 'order' => 9998];
             $matched = self::matchedCurrencies($planId);
             if ($matched === []) {
                 $emit($cat, '<tr><td>' . $nameCell . '</td><td>#'
                     . $planId . '</td><td colspan="' . $nCyc . '" '
-                    . 'class="bcp-row-v muted">Preço da plataforma '
-                    . 'indisponível</td><td><span class="bcp-badge '
-                    . 'is-warn">sem preço</span></td><td></td></tr>');
+                    . 'class="bcp-row-v muted">' . self::e(I18n::t('admin.prices.platform_unavailable')) . '</td><td><span class="bcp-badge '
+                    . 'is-warn">' . self::e(I18n::t('admin.prices.no_price')) . '</span></td><td></td></tr>');
                 continue;
             }
             $plat = [];
@@ -1358,8 +1322,8 @@ final class AdminPage
                 $whmcs[$m['code']] = $cyc;
             }
             $badge = $changed
-                ? '<span class="bcp-badge is-err">divergente</span>'
-                : '<span class="bcp-badge is-ok">sincronizado</span>';
+                ? '<span class="bcp-badge is-err">' . self::e(I18n::t('admin.prices.divergent')) . '</span>'
+                : '<span class="bcp-badge is-ok">' . self::e(I18n::t('admin.prices.synchronized')) . '</span>';
             $act = '';
             if ($changed) {
                 $diverging[] = $pid;
@@ -1367,10 +1331,8 @@ final class AdminPage
                     $base,
                     'prices-sync',
                     ['pids[]' => (string) $pid],
-                    'Sincronizar',
-                    'Importar o preço do plano BladeCP para "'
-                        . $p['name'] . '" (sobrescreve só os ciclos '
-                        . 'que o plano define)?',
+                    I18n::t('admin.common.sync'),
+                    I18n::t('admin.prices.sync_confirm', ['name' => $p['name']]),
                     'refresh'
                 );
             }
@@ -1402,9 +1364,7 @@ final class AdminPage
                 $hidden .= '<input type="hidden" name="pids[]" value="'
                     . (int) $n . '">';
             }
-            $msg = 'Sincronizar o preço do plano para os '
-                . count($diverging) . ' produto(s) divergente(s)? '
-                . 'Sobrescreve só os ciclos que cada plano define.';
+            $msg = I18n::t('admin.prices.bulk_confirm', ['count' => count($diverging)]);
             $bulk = '<div class="bcp-actions"><form method="post" '
                 . 'action="' . self::e($base) . '" onsubmit="return '
                 . 'confirm(' . htmlspecialchars(
@@ -1415,8 +1375,7 @@ final class AdminPage
                 . '<input type="hidden" name="action" '
                 . 'value="prices-sync">' . $hidden
                 . '<button class="btn btn-primary" type="submit">'
-                . self::ic('refresh') . 'Sincronizar todos os '
-                . 'divergentes (' . count($diverging) . ')</button>'
+                . self::ic('refresh') . self::e(I18n::t('admin.prices.sync_all', ['count' => count($diverging)])) . '</button>'
                 . '</form></div>';
         }
 
@@ -1424,15 +1383,10 @@ final class AdminPage
         foreach ($cycles as $clabel) {
             $cycHead .= '<th scope="col">' . self::e($clabel) . '</th>';
         }
-        $legend = '<p class="bcp-chips-note">Cada célula mostra o '
-            . 'preço da <strong>plataforma</strong>; quando o WHMCS '
-            . 'diverge, o valor atual dele aparece em '
-            . '<span class="bcp-cwhmcs" style="display:inline">'
-            . 'vermelho</span> abaixo. "—" = sem preço naquele ciclo. '
-            . 'Sincronizar grava só os ciclos que o plano define.</p>';
-        $table = '<div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">Produto</th>'
-            . '<th scope="col">Plano</th>' . $cycHead . '<th scope="col">Status</th>'
-            . '<th scope="col"><span class="sr-only">Ações</span></th></tr></thead><tbody>' . $rows
+        $legend = '<p class="bcp-chips-note">' . self::e(I18n::t('admin.prices.legend')) . '</p>';
+        $table = '<div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">' . self::e(I18n::t('admin.common.product')) . '</th>'
+            . '<th scope="col">' . self::e(I18n::t('admin.common.plan')) . '</th>' . $cycHead . '<th scope="col">' . self::e(I18n::t('admin.common.status')) . '</th>'
+            . '<th scope="col"><span class="sr-only">' . self::e(I18n::t('admin.common.actions')) . '</span></th></tr></thead><tbody>' . $rows
             . '</tbody></table></div>';
 
         return self::card($h, self::tabs($base, 'prices')
@@ -1443,27 +1397,20 @@ final class AdminPage
 
     private static function orderformView(string $base, int $pid): string
     {
-        $h = self::header(
-            'Sincronizar componentes',
-            'Sincroniza o catálogo BladeCP para o cliente escolher '
-                . 'componentes/combo no checkout do WHMCS. Opt-in.'
-        );
+        $h = self::header(I18n::t('admin.orderform.title'), I18n::t('admin.orderform.header_detail'));
         // Sem "Voltar" genérico (a tab já navega). Só retorno ao
         // produto quando veio de um produto (pid — drill-down).
         $back = $pid > 0
             ? '<div class="bcp-actions"><a class="btn btn-default" '
                 . 'href="configproducts.php?action=edit&id=' . $pid
                 . '">' . self::ic('arrow-left')
-                . 'Voltar ao produto</a></div>'
+                . self::e(I18n::t('admin.common.back_to_product')) . '</a></div>'
             : '';
 
         [$catalog, $catOk] = self::catalog();
         if (!$catOk || $catalog === []) {
             return self::card($h, self::tabs($base, 'sync')
-                . '<p class="bcp-row-v">Catálogo '
-                . 'indisponível (configure o <strong>Server record</strong> '
-                . 'com a API key e Test Connection OK). Sem catálogo não '
-                . 'dá pra sincronizar o order form.</p>' . $back);
+                . '<p class="bcp-row-v">' . self::e(I18n::t('admin.orderform.catalog_unavailable')) . '</p>' . $back);
         }
 
         $combos = Combos::all();
@@ -1483,23 +1430,16 @@ final class AdminPage
 
         $banner = '';
         if (isset($_GET['done'])) {
-            $banner = '<div class="bcp-badge is-ok">Order form '
-                . 'sincronizado.</div>';
+            $banner = '<div class="bcp-badge is-ok">' . self::e(I18n::t('admin.orderform.synced')) . '</div>';
         } elseif (isset($_GET['removed'])) {
-            $banner = '<div class="bcp-badge is-warn">Sync removido '
-                . 'do WHMCS.</div>';
+            $banner = '<div class="bcp-badge is-warn">' . self::e(I18n::t('admin.orderform.removed')) . '</div>';
         }
         // Aviso: moeda(s) sem preço sincronizado nas sub-options → o
         // WHMCS esconde os Configurable Options nessas moedas no order
         // form até re-sincronizar. "Sincronizar agora" abaixo corrige.
         $missCur = ConfigurableOptions::currenciesMissingPricing();
         if ($missCur !== []) {
-            $banner .= '<div class="bcp-badge is-err">'
-                . count($missCur) . ' moeda(s) sem preço sincronizado'
-                . ' (' . self::e(implode(', ', $missCur)) . '): os '
-                . 'Configurable Options não aparecem no order form '
-                . 'nessas moedas. Clique em "Sincronizar agora" '
-                . 'abaixo para corrigir.</div>';
+            $banner .= '<div class="bcp-badge is-err">' . self::e(I18n::t('admin.orderform.missing_prices', ['count' => count($missCur), 'currencies' => implode(', ', $missCur)])) . '</div>';
         }
 
         // nome do componente → categoria (p/ agrupar o diff).
@@ -1507,8 +1447,8 @@ final class AdminPage
         foreach ($catalog as $it) {
             $n = trim((string) ($it['name'] ?? ''));
             if ($n !== '') {
-                $nameCat[$n] = trim((string) ($it['category'] ?? 'Outros'))
-                    ?: 'Outros';
+                $nameCat[$n] = trim((string) ($it['category'] ?? I18n::t('admin.common.other')))
+                    ?: I18n::t('admin.common.other');
             }
         }
         // lista de nomes → badges Bootstrap AGRUPADOS por categoria.
@@ -1518,7 +1458,7 @@ final class AdminPage
             }
             $byCat = [];
             foreach ($xs as $x) {
-                $byCat[$nameCat[$x] ?? 'Outros'][] = $x;
+                $byCat[$nameCat[$x] ?? I18n::t('admin.common.other')][] = $x;
             }
             uksort($byCat, static fn ($a, $b): int =>
                 SelectionRules::categoryRank((string) $a)
@@ -1537,30 +1477,26 @@ final class AdminPage
             return $o;
         };
 
-        $status = '<div class="bcp-sec">Situação</div>'
+        $status = '<div class="bcp-sec">' . self::e(I18n::t('admin.orderform.status')) . '</div>'
             . '<div class="bcp-statrow"><span class="bcp-statk">'
-            . 'Grupo "BladeCP" no WHMCS</span>'
+            . self::e(I18n::t('admin.orderform.group_status')) . '</span>'
             . ($current === []
-                ? '<span class="bcp-pill off">ainda não criado</span>'
-                : '<span class="bcp-pill on">existe ('
-                    . count($current) . ' opções)</span>')
+                ? '<span class="bcp-pill off">' . self::e(I18n::t('admin.orderform.not_created')) . '</span>'
+                : '<span class="bcp-pill on">' . self::e(I18n::t('admin.orderform.exists', ['count' => count($current)])) . '</span>')
             . '</div>'
             . ($pid > 0
                 ? '<div class="bcp-statrow"><span class="bcp-statk">'
-                    . 'Ligado a este produto (#' . $pid . ')</span>'
+                    . self::e(I18n::t('admin.orderform.linked_product', ['id' => $pid])) . '</span>'
                     . ($linked
-                        ? '<span class="bcp-pill on">sim</span>'
-                        : '<span class="bcp-pill off">não</span>')
+                        ? '<span class="bcp-pill on">' . self::e(I18n::t('admin.common.yes')) . '</span>'
+                        : '<span class="bcp-pill off">' . self::e(I18n::t('admin.common.no')) . '</span>')
                     . '</div>'
                 : '');
 
-        $preview = '<div class="bcp-sec">O que o sync vai fazer</div>'
-            . '<div class="bcp-difb"><strong>Adicionar ('
-            . count($d['add']) . ')</strong>' . $grouped($d['add'])
-            . '</div><div class="bcp-difb"><strong>Manter ('
-            . count($d['keep']) . ')</strong>' . $grouped($d['keep'])
-            . '</div><div class="bcp-difb"><strong>Remover — só do '
-            . 'nosso grupo (' . count($d['remove']) . ')</strong>'
+        $preview = '<div class="bcp-sec">' . self::e(I18n::t('admin.orderform.preview')) . '</div>'
+            . '<div class="bcp-difb"><strong>' . self::e(I18n::t('admin.orderform.add', ['count' => count($d['add'])])) . '</strong>' . $grouped($d['add'])
+            . '</div><div class="bcp-difb"><strong>' . self::e(I18n::t('admin.orderform.keep', ['count' => count($d['keep'])])) . '</strong>' . $grouped($d['keep'])
+            . '</div><div class="bcp-difb"><strong>' . self::e(I18n::t('admin.orderform.remove', ['count' => count($d['remove'])])) . '</strong>'
             . $grouped($d['remove']) . '</div>';
 
         // ATENÇÃO: forms NÃO podem aninhar (HTML inválido — o browser
@@ -1575,29 +1511,24 @@ final class AdminPage
                 ? '<input type="hidden" name="pid" value="' . $pid . '">'
                 : '')
             . '<button class="btn btn-primary" type="submit">'
-            . self::ic('refresh') . 'Sincronizar agora'
-            . ($pid > 0 ? ' + ligar a este produto' : '')
+            . self::ic('refresh') . self::e(I18n::t('admin.orderform.sync_now'))
+            . ($pid > 0 ? ' ' . self::e(I18n::t('admin.orderform.link_product')) : '')
             . '</button></form>'
             . self::postBtn(
                 $base,
                 'orderform-remove',
                 $pid > 0 ? ['pid' => (string) $pid] : [],
-                'Remover do WHMCS',
-                'Remover o grupo BladeCP e todas as opções/preços '
-                    . 'sincronizados? (reversível: é só sincronizar de novo)'
+                I18n::t('admin.common.remove_from_whmcs'),
+                I18n::t('admin.orderform.remove_confirm')
             )
             . ($pid > 0
                 ? '<a class="btn btn-default" href="configproducts.php'
                     . '?action=edit&id=' . $pid . '">'
-                    . self::ic('arrow-left') . 'Voltar ao produto</a>'
+                    . self::ic('arrow-left') . self::e(I18n::t('admin.common.back_to_product')) . '</a>'
                 : '')
             . '</div>';
 
-        $note = '<div class="bcp-chips-note">Cria 1 opção sim/não por '
-            . 'componente + 1 dropdown "Combo". Preço nasce 0 — '
-            . '<strong>você precifica no WHMCS</strong> (o catálogo não '
-            . 'tem preço). Idempotente e reversível: só mexe no grupo '
-            . '"BladeCP", nunca em opções suas. Sem sync automático.</div>';
+        $note = '<div class="bcp-chips-note">' . self::e(I18n::t('admin.orderform.note')) . '</div>';
 
         return self::card($h, self::tabs($base, 'sync')
             . $banner . $status . $preview . $sync . $note);
@@ -1620,46 +1551,26 @@ final class AdminPage
      */
     private static function optionsView(string $base, int $pid): string
     {
-        $h = self::header(
-            'Opções configuráveis',
-            'Sincroniza grupos de opções precificadas (RAM, disco, …) do '
-                . 'catálogo BladeCP para o order form do WHMCS. Os grupos '
-                . 'são ligados ao PLANO do produto e não fazem parte '
-                . 'da sincronização de componentes.'
-        );
+        $h = self::header(I18n::t('admin.options.title'), I18n::t('admin.options.header_detail'));
         [$groups, $ok] = self::optionGroups($pid);
         if (!$ok) {
             return self::card($h, self::tabs($base, 'options')
-                . '<p class="bcp-row-v">Catálogo de opções indisponível '
-                . '(configure o <strong>Server record</strong> com a API '
-                . 'key e Test Connection OK). Sem catálogo não dá pra '
-                . 'sincronizar as opções.</p>');
+                . '<p class="bcp-row-v">' . self::e(I18n::t('admin.options.catalog_unavailable')) . '</p>');
         }
 
         $banner = '';
         if (isset($_GET['done'])) {
-            $banner = '<div class="bcp-badge is-ok">Opções '
-                . 'sincronizadas.</div>';
+            $banner = '<div class="bcp-badge is-ok">' . self::e(I18n::t('admin.options.synced')) . '</div>';
         } elseif (isset($_GET['removed'])) {
-            $banner = '<div class="bcp-badge is-warn">Opções removidas '
-                . 'do WHMCS.</div>';
+            $banner = '<div class="bcp-badge is-warn">' . self::e(I18n::t('admin.options.removed')) . '</div>';
         }
         $miss = OptionGroups::currenciesMissingPricing();
         if ($miss !== []) {
-            $banner .= '<div class="bcp-badge is-err">' . count($miss)
-                . ' moeda(s) sem preço sincronizado ('
-                . self::e(implode(', ', $miss)) . '): as opções não '
-                . 'aparecem no order form nessas moedas até '
-                . 're-sincronizar.</div>';
+            $banner .= '<div class="bcp-badge is-err">' . self::e(I18n::t('admin.options.missing_prices', ['count' => count($miss), 'currencies' => implode(', ', $miss)])) . '</div>';
         }
 
         if ($groups === []) {
-            $emptyMsg = $pid > 0
-                ? 'Este produto (o PLANO mapeado nele) ainda não tem '
-                    . 'grupos de opções configuráveis ligados no catálogo '
-                    . 'BladeCP. Vincule grupos ao plano no catálogo BladeCP.'
-                : 'O parceiro ainda não tem grupos de opções '
-                    . 'configuráveis no catálogo BladeCP.';
+            $emptyMsg = $pid > 0 ? I18n::t('admin.options.empty_product') : I18n::t('admin.options.empty_global');
             return self::card($h, self::tabs($base, 'options') . $banner
                 . '<p class="bcp-row-v">' . self::e($emptyMsg) . '</p>');
         }
@@ -1677,14 +1588,13 @@ final class AdminPage
                 $ck = $linked ? ' checked' : '';
                 $link = ' <label class="bcp-row-v" style="display:inline">'
                     . '<input type="checkbox" name="link[]" value="'
-                    . self::e($uuid) . '"' . $ck . '> ligar a este '
-                    . 'produto</label>';
+                    . self::e($uuid) . '"' . $ck . '> ' . self::e(I18n::t('admin.options.link_product')) . '</label>';
             }
             $rows .= '<div class="bcp-difb"><strong>'
                 . self::e((string) ($g['name'] ?? '')) . '</strong> '
                 . ($synced
-                    ? '<span class="bcp-pill on">sincronizado</span>'
-                    : '<span class="bcp-pill off">novo</span>')
+                    ? '<span class="bcp-pill on">' . self::e(I18n::t('admin.prices.synchronized')) . '</span>'
+                    : '<span class="bcp-pill off">' . self::e(I18n::t('admin.options.new')) . '</span>')
                 . $link . self::optionsTable($g) . '</div>';
         }
 
@@ -1698,28 +1608,18 @@ final class AdminPage
                 : '')
             . $rows
             . '<div class="bcp-actions"><button class="btn btn-primary" '
-            . 'type="submit">' . self::ic('refresh') . 'Sincronizar opções'
-            . ($pid > 0 ? ' (e vínculos marcados)' : '')
+            . 'type="submit">' . self::ic('refresh') . self::e(I18n::t('admin.options.sync'))
+            . ($pid > 0 ? ' ' . self::e(I18n::t('admin.options.marked_links')) : '')
             . '</button></div></form>'
             . '<div class="bcp-actions">' . self::postBtn(
                 $base,
                 'options-remove',
                 $pid > 0 ? ['pid' => (string) $pid] : [],
-                'Remover do WHMCS',
-                'Remover todos os grupos de opções configuráveis '
-                    . 'sincronizados? (reversível: é só sincronizar de '
-                    . 'novo)'
+                I18n::t('admin.common.remove_from_whmcs'),
+                I18n::t('admin.options.remove_confirm')
             ) . '</div>';
 
-        $note = '<div class="bcp-chips-note">1 grupo do catálogo = 1 '
-            . 'grupo de Configurable Options no WHMCS (sem clonagem por '
-            . 'produto). Os grupos listados são os ligados ao <strong>'
-            . 'plano</strong> do produto; o vínculo liga o grupo do plano '
-            . 'a este produto WHMCS. O preço vem do catálogo (UNIDADE, '
-            . 'por moeda × ciclo) e é <strong>sobrescrito</strong> a cada '
-            . 'sync. O valor default "Nenhum (incluído)" fica a 0. '
-            . 'Idempotente e reversível: só mexe nos grupos do BladeCP.'
-            . '</div>';
+        $note = '<div class="bcp-chips-note">' . self::e(I18n::t('admin.options.note')) . '</div>';
 
         return self::card($h, self::tabs($base, 'options')
             . $banner . $sync . $note);
@@ -1730,7 +1630,7 @@ final class AdminPage
     {
         $opts = is_array($g['options'] ?? null) ? $g['options'] : [];
         if ($opts === []) {
-            return '<p class="bcp-row-v muted">Sem opções neste grupo.</p>';
+            return '<p class="bcp-row-v muted">' . self::e(I18n::t('admin.options.empty_group')) . '</p>';
         }
         $out = '';
         foreach ($opts as $o) {
@@ -1744,7 +1644,7 @@ final class AdminPage
                     continue;
                 }
                 $def = !empty($v['isDefault'])
-                    ? ' <span class="bcp-pill off">incluído</span>' : '';
+                    ? ' <span class="bcp-pill off">' . self::e(I18n::t('admin.options.included')) . '</span>' : '';
                 $cells .= '<tr><td>' . self::e((string) ($v['label'] ?? ''))
                     . $def . '</td><td>' . self::valuePriceLabel($v)
                     . '</td></tr>';
@@ -1759,8 +1659,8 @@ final class AdminPage
                     ? ' <span class="bcp-csub">' . self::e((string) $rk)
                         . '</span>'
                     : '')
-                . '</div><div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">Valor</th>'
-                . '<th scope="col">Preço (mensal por moeda)</th></tr></thead><tbody>'
+                . '</div><div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">' . self::e(I18n::t('admin.options.value')) . '</th>'
+                . '<th scope="col">' . self::e(I18n::t('admin.options.monthly_price')) . '</th></tr></thead><tbody>'
                 . $cells . '</tbody></table></div>';
         }
         return $out;
@@ -1868,17 +1768,17 @@ final class AdminPage
             return '';
         }
 
-        $name = trim((string) ($server['name'] ?? 'Servidor BladeCP'));
+        $name = trim((string) ($server['name'] ?? I18n::t('admin.server.default_name')));
         $host = trim((string) ($server['hostname'] ?? ''));
         $normalizedHost = strtolower($host);
         if (str_contains($normalizedHost, Setup::HOST_SANDBOX)) {
-            $environment = 'Sandbox';
+            $environment = I18n::t('admin.server.sandbox');
             $environmentClass = 'is-sandbox';
         } elseif (str_contains($normalizedHost, Setup::HOST_PRODUCTION)) {
-            $environment = 'Produção';
+            $environment = I18n::t('admin.server.production');
             $environmentClass = 'is-production';
         } else {
-            $environment = 'Personalizado';
+            $environment = I18n::t('admin.server.custom');
             $environmentClass = 'is-custom';
         }
         $displayName = preg_replace(
@@ -1888,9 +1788,9 @@ final class AdminPage
         );
         $displayName = trim(is_string($displayName) ? $displayName : $name);
 
-        return '<aside class="bcp-server-context-card" aria-label="Servidor BladeCP em uso">'
+        return '<aside class="bcp-server-context-card" aria-label="' . self::e(I18n::t('admin.server.aria')) . '">'
             . '<span class="bcp-server-context-details">'
-            . '<span class="bcp-server-context-label">Servidor</span>'
+            . '<span class="bcp-server-context-label">' . self::e(I18n::t('admin.server.label')) . '</span>'
             . '<span class="bcp-server-context-identity">'
             . '<strong class="bcp-server-context-name">' . self::e($displayName !== '' ? $displayName : 'BladeCP') . '</strong>'
             . '<span class="bcp-badge bcp-server-context-environment ' . $environmentClass . '">'
@@ -1899,7 +1799,7 @@ final class AdminPage
             . '</span>'
             . '<a class="btn btn-default btn-sm bcp-server-context-action" href="'
             . self::e($base . '&action=setup') . '">' . self::ic('pencil')
-            . 'Revisar configuração</a></aside>';
+            . self::e(I18n::t('admin.server.review')) . '</a></aside>';
     }
 
     /**
@@ -1915,14 +1815,14 @@ final class AdminPage
         }
 
         $label = $state === 'ambiguous'
-            ? 'Há mais de um servidor BladeCP elegível. Escolha o servidor usado pelas telas globais.'
+            ? I18n::t('admin.setup.multiple_servers')
             : ($state === 'invalid'
-                ? 'A conta BladeCP antes selecionada não está mais disponível.'
-                : 'Servidor BladeCP ainda não configurado. Conecte sua API key em um passo.');
+                ? I18n::t('admin.setup.selected_server_unavailable')
+                : I18n::t('admin.setup.server_not_configured'));
         return '<div class="bcp-flash bcp-flash-warn"><div><strong>' . self::e($label)
             . '</strong></div><a class="btn btn-primary" href="' . self::e($base)
             . '&action=setup">' . self::ic('plug')
-            . ($state === 'missing' ? 'Configuração rápida' : 'Escolher conta') . '</a></div>';
+            . self::e(I18n::t($state === 'missing' ? 'admin.setup.quick_setup' : 'admin.setup.choose_account')) . '</a></div>';
     }
 
     /**
@@ -1936,7 +1836,7 @@ final class AdminPage
         if (in_array((string) ($context['state'] ?? ''), ['ambiguous', 'invalid'], true)) {
             return self::shell(self::setupView(
                 $base,
-                'Escolha uma conta BladeCP válida antes de salvar uma credencial. Isso evita criar ou alterar um servidor diferente por engano.',
+                I18n::t('admin.setup.choose_valid_account'),
                 true
             ));
         }
@@ -1945,8 +1845,7 @@ final class AdminPage
         if ($env === null) {
             return self::shell(self::setupView(
                 $base,
-                'Chave não reconhecida. Use uma chave bcp_sand_… para sandbox '
-                . 'ou bcp_live_… para produção.',
+                I18n::t('admin.setup.invalid_key'),
                 true
             ));
         }
@@ -1955,8 +1854,7 @@ final class AdminPage
         if (!$val['ok']) {
             return self::shell(self::setupView(
                 $base,
-                'Não foi possível conectar com essa chave em ' . $env['label']
-                . '. ' . (string) ($val['error'] ?? ''),
+                I18n::t('admin.setup.connection_failed', ['environment' => $env['label'], 'error' => (string) ($val['error'] ?? '')]),
                 true
             ));
         }
@@ -1965,9 +1863,7 @@ final class AdminPage
         if (!$save['ok']) {
             return self::shell(self::setupView(
                 $base,
-                'A conexão foi validada, mas a credencial não pôde ser '
-                . 'protegida e nenhuma alteração foi salva. Verifique a '
-                . 'criptografia do WHMCS e tente novamente.',
+                I18n::t('admin.setup.save_failed'),
                 true
             ));
         }
@@ -1985,7 +1881,7 @@ final class AdminPage
         if ($params === null) {
             return self::shell(self::setupView(
                 $base,
-                'Nenhum servidor BladeCP configurado foi encontrado.'
+                I18n::t('admin.setup.no_server')
             ));
         }
 
@@ -1994,7 +1890,7 @@ final class AdminPage
         if ($key === '') {
             return self::shell(self::setupView(
                 $base,
-                'O servidor existe, mas não possui uma credencial BladeCP válida.'
+                I18n::t('admin.setup.invalid_credential')
             ));
         }
         if ($host === '') {
@@ -2005,8 +1901,7 @@ final class AdminPage
         if (!$validation['ok']) {
             return self::shell(self::setupView(
                 $base,
-                'A configuração está salva, mas a conexão não pôde ser validada. '
-                . (string) ($validation['error'] ?? '')
+                I18n::t('admin.setup.validation_failed', ['error' => (string) ($validation['error'] ?? '')])
             ));
         }
 
@@ -2018,16 +1913,15 @@ final class AdminPage
         return '<script>window.location='
             . json_encode($to, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES)
             . ';</script><noscript><a href="' . self::e($to)
-            . '">Continuar</a></noscript>';
+            . '">' . self::e(I18n::t('admin.common.continue')) . '</a></noscript>';
     }
 
     private static function handlePost(string $base, string $action, int $pid): string
     {
         if (!self::checkToken()) {
             return self::shell(self::card(
-                self::header('Sessão expirada', ''),
-                '<p class="bcp-row-v">Token inválido. '
-                . '<a href="' . self::e($base) . '">Voltar</a>.</p>'
+                self::header(I18n::t('admin.common.session_expired'), ''),
+                '<p class="bcp-row-v">' . self::e(I18n::t('admin.common.invalid_token')) . ' <a href="' . self::e($base) . '">' . self::e(I18n::t('admin.common.back')) . '</a>.</p>'
             ));
         }
         if ($action === 'admin-server-select') {
@@ -2041,7 +1935,7 @@ final class AdminPage
             if (!$ok) {
                 return self::shell(self::setupView(
                     $base,
-                    'Não foi possível salvar o servidor BladeCP escolhido. Selecione um servidor elegível e tente novamente.'
+                    I18n::t('admin.setup.server_selection_failed')
                 ));
             }
             return self::redirect($base . '&action=setup&context=updated');
@@ -2087,14 +1981,13 @@ final class AdminPage
             $chk = SelectionRules::check($ruleItems);
             if (!$chk['ok']) {
                 return self::shell(self::card(
-                    self::header('Combo inválido', 'Regras de seleção '
-                        . '(as mesmas regras usadas na configuração do catálogo).'),
+                    self::header(I18n::t('admin.combos.invalid'), I18n::t('admin.combos.invalid_detail')),
                     '<ul>' . implode('', array_map(
                         static fn ($x) => '<li>' . self::e($x) . '</li>',
                         $chk['errors']
                     )) . '</ul><a class="btn btn-default" href="'
                     . self::e($base) . '">' . self::ic('arrow-left')
-                    . 'Voltar</a>'
+                    . self::e(I18n::t('admin.common.back')) . '</a>'
                 ));
             }
             $res = Combos::save(
@@ -2104,12 +1997,12 @@ final class AdminPage
             );
             if (!$res['ok']) {
                 return self::shell(self::card(
-                    self::header('Erro ao salvar', ''),
+                    self::header(I18n::t('admin.common.save_error'), ''),
                     '<ul>' . implode('', array_map(
                         static fn ($x) => '<li>' . self::e($x) . '</li>',
                         $res['errors']
                     )) . '</ul><a class="btn btn-default" href="'
-                    . self::e($base) . '">Voltar</a>'
+                    . self::e($base) . '">' . self::e(I18n::t('admin.common.back')) . '</a>'
                 ));
             }
             $to = $base . '&action=combos'
@@ -2191,14 +2084,14 @@ final class AdminPage
             return self::shell(self::webhooksView(
                 $base,
                 $res['ok'] ? '' : $res['error'],
-                $res['ok'] ? 'Webhooks conectados com segurança.' : ''
+                $res['ok'] ? I18n::t('admin.webhooks.connected') : ''
             ));
         } elseif ($action === 'webhook-rotate') {
             $res = WebhookConfig::rotate();
             return self::shell(self::webhooksView(
                 $base,
                 $res['ok'] ? '' : $res['error'],
-                $res['ok'] ? 'Segredo rotacionado com segurança.' : ''
+                $res['ok'] ? I18n::t('admin.webhooks.rotated') : ''
             ));
         } elseif ($action === 'webhook-replay') {
             $res = WebhookDiagnostics::replay(
@@ -2219,9 +2112,7 @@ final class AdminPage
             if (!$r['ok']) {
                 return self::shell(self::setupView(
                     $base,
-                    'Não foi possível criar o produto de teste ('
-                    . (string) ($r['error'] ?? '') . '). Crie manualmente em '
-                    . 'Setup → Products/Services (módulo bladecp, tipo Stack).'
+                    I18n::t('admin.setup.starter_product_failed', ['error' => (string) ($r['error'] ?? '')])
                 ));
             }
             return self::redirect(
@@ -2357,14 +2248,14 @@ final class AdminPage
     {
         try {
             if (!class_exists(\WHMCS\Database\Capsule::class)) {
-                return 'Produto #' . $pid;
+                return I18n::t('admin.common.product_number', ['id' => $pid]);
             }
             $r = \WHMCS\Database\Capsule::table('tblproducts')
                 ->where('id', $pid)->first();
             $n = $r->name ?? '';
-            return $n !== '' ? (string) $n : 'Produto #' . $pid;
+            return $n !== '' ? (string) $n : I18n::t('admin.common.product_number', ['id' => $pid]);
         } catch (\Throwable) {
-            return 'Produto #' . $pid;
+            return I18n::t('admin.common.product_number', ['id' => $pid]);
         }
     }
 

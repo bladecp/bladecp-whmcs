@@ -67,24 +67,25 @@ final class Layout
         $pid = isset($_GET['pid']) ? (int) $_GET['pid'] : 0;
         $q = $pid > 0 ? '&pid=' . $pid : '';
         $items = [
-            'overview' => ['&action=overview', 'Visão geral', 'layers'],
-            'setup' => ['&action=setup', 'Configuração', 'plug'],
-            'planos' => ['&action=planos', 'Planos', 'layers'],
-            'combos' => ['&action=combos', 'Combos', 'package'],
-            'sync' => ['&action=orderform', 'Componentes', 'refresh'],
-            'options' => ['&action=options', 'Opções', 'plug'],
-            'prices' => ['&action=prices', 'Preços', 'download'],
-            'marketplace' => ['&action=marketplace', 'Marketplace', 'receipt'],
-            'webhooks' => ['&action=webhooks', 'Webhooks', 'webhook'],
-            'operation' => ['&action=operation', 'Operação', 'package'],
-            'diagnostics' => ['&action=diagnostics', 'Diagnóstico', 'refresh'],
+            'overview' => ['&action=overview', 'layout.tabs.overview', 'layers'],
+            'setup' => ['&action=setup', 'layout.tabs.setup', 'plug'],
+            'planos' => ['&action=planos', 'layout.tabs.plans', 'layers'],
+            'combos' => ['&action=combos', 'layout.tabs.combos', 'package'],
+            'sync' => ['&action=orderform', 'layout.tabs.components', 'refresh'],
+            'options' => ['&action=options', 'layout.tabs.options', 'plug'],
+            'prices' => ['&action=prices', 'layout.tabs.prices', 'download'],
+            'marketplace' => ['&action=marketplace', 'layout.tabs.marketplace', 'receipt'],
+            'webhooks' => ['&action=webhooks', 'layout.tabs.webhooks', 'webhook'],
+            'operation' => ['&action=operation', 'layout.tabs.operation', 'package'],
+            'diagnostics' => ['&action=diagnostics', 'layout.tabs.diagnostics', 'refresh'],
         ];
         $out = '<div class="bcp-tabs">';
-        foreach ($items as $key => [$qs, $label, $icon]) {
+        foreach ($items as $key => [$qs, $labelKey, $icon]) {
             $global = in_array($key, ['overview', 'setup', 'prices', 'marketplace', 'webhooks', 'operation', 'diagnostics', 'planos'], true);
             $href = $base . $qs . ($global ? '' : $q);
             $out .= '<a class="bcp-tab' . ($key === $active ? ' is-active' : '') . '" href="'
-                . self::escape($href) . '">' . self::icon($icon) . self::escape($label) . '</a>';
+                . self::escape($href) . '">' . self::icon($icon)
+                . self::escape(I18n::t($labelKey)) . '</a>';
         }
         return $out . '</div>';
     }
@@ -121,7 +122,8 @@ final class Layout
         return '<a' . ($class !== '' ? ' class="' . self::escape($class) . '"' : '')
             . ' href="https://github.com/bladecp/bladecp-whmcs/blob/main/docs/configuration.md"'
             . ' target="_blank" rel="noopener noreferrer">'
-            . self::escape($label) . '<span class="sr-only"> (abre em nova aba)</span>'
+            . self::escape($label) . '<span class="sr-only"> '
+            . self::escape(I18n::t('layout.opensInNewTab')) . '</span>'
             . self::icon('external-link') . '</a>';
     }
 

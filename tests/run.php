@@ -121,13 +121,58 @@ check('public package keeps the expected installable module layout', static func
         'LICENSE',
         'README.md',
         'README.pt-BR.md',
+        'README.es.md',
         'CHANGELOG.md',
         'SECURITY.md',
+        'assets/screenshots/README.md',
         'modules/servers/bladecp/bladecp.php',
         'modules/addons/bladecp/bladecp.php',
         'modules/addons/bladecp/webhook.php',
     ] as $path) {
         expect(is_file($root . '/' . $path), "missing {$path}");
+    }
+});
+
+check('public documentation declares three localized READMEs and 21 localized screenshots', static function () use ($root): void {
+    $languages = ['en', 'pt-BR', 'es'];
+    $views = ['overview', 'configuration', 'plans', 'pricing', 'marketplace', 'operations-diagnostics', 'client-service'];
+    $screenshots = [];
+
+    foreach ($languages as $language) {
+        foreach ($views as $view) {
+            $path = $root . "/assets/screenshots/{$language}/{$view}.jpg";
+            expect(is_file($path), "missing localized screenshot {$language}/{$view}");
+            $contents = (string) file_get_contents($path);
+            expect(substr($contents, 0, 3) === "\xFF\xD8\xFF", "{$language}/{$view} is not a JPEG");
+            expect(strpos($contents, "Exif\x00\x00") === false, "{$language}/{$view} contains EXIF metadata");
+            expect(strpos($contents, 'http://ns.adobe.com/xap/1.0/') === false, "{$language}/{$view} contains XMP metadata");
+            expect(strpos($contents, 'Photoshop 3.0') === false, "{$language}/{$view} contains Photoshop metadata");
+            $screenshots[] = $path;
+        }
+    }
+
+    $actual = glob($root . '/assets/screenshots/*/*.jpg') ?: [];
+    sort($actual);
+    sort($screenshots);
+    expect($actual === $screenshots, 'public package does not contain exactly the approved screenshot set');
+});
+
+check('public prose does not disclose unpublished, personal, or third-party demo references', static function () use ($root): void {
+    $paths = [
+        $root . '/README.md',
+        $root . '/README.pt-BR.md',
+        $root . '/README.es.md',
+        $root . '/CHANGELOG.md',
+        $root . '/SECURITY.md',
+        $root . '/CONTRIBUTING.md',
+        $root . '/assets/screenshots/README.md',
+    ];
+    foreach (glob($root . '/docs/*.md') ?: [] as $path) {
+        $paths[] = $path;
+    }
+    foreach ($paths as $path) {
+        $contents = (string) file_get_contents($path);
+        expect(preg_match('/api\\.bladecp\\.cloud|sandbox|valuehost|ulisses/i', $contents) !== 1, "prohibited public prose reference in " . basename($path));
     }
 });
 

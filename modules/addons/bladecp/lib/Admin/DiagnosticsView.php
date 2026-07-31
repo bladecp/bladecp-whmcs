@@ -27,18 +27,24 @@ final class DiagnosticsView
             'WHMCS\\Module\\Addon\\Bladecp\\IntegrationReadiness',
             ['snapshot', 'inspect', 'load']
         );
-        $body = '<div class="bcp-diagnostic-hero"><span class="bcp-eyebrow">VERIFICAÇÕES SEGURAS</span>'
-            . '<h4>Entenda o estado antes de fazer uma alteração.</h4><p>Os indicadores não mudam produtos, pedidos ou credenciais. Quando algum dado não puder ser conferido, ele aparece como indisponível, sem assumir que está tudo certo.</p></div>';
+        $body = '<div class="bcp-diagnostic-hero"><span class="bcp-eyebrow">'
+            . Layout::escape(I18n::t('diagnostics.hero.eyebrow')) . '</span>'
+            . '<h4>' . Layout::escape(I18n::t('diagnostics.hero.title')) . '</h4><p>'
+            . Layout::escape(I18n::t('diagnostics.hero.description')) . '</p></div>';
         $body .= self::checks($base, $diagnostics) . self::readiness($base, $readiness);
-        $body .= '<section class="bcp-glossary" aria-labelledby="bcp-glossary-title"><h4 id="bcp-glossary-title">Guia rápido</h4>'
-            . '<dl><dt>Pronto</dt><dd>A verificação necessária foi concluída e não há alerta conhecido.</dd>'
-            . '<dt>Atenção</dt><dd>Há uma pendência ou uma informação que merece revisão antes do próximo passo.</dd>'
-            . '<dt>Indisponível</dt><dd>O módulo não conseguiu confirmar a informação agora. Verifique a conexão e tente novamente.</dd></dl></section>';
-        $body .= '<p class="bcp-docs-help">Precisa de mais contexto? '
-            . Layout::docsLink('Consulte a documentação BladeCP') . '</p>';
+        $body .= '<section class="bcp-glossary" aria-labelledby="bcp-glossary-title"><h4 id="bcp-glossary-title">'
+            . Layout::escape(I18n::t('diagnostics.glossary.title')) . '</h4>'
+            . '<dl><dt>' . Layout::escape(I18n::t('diagnostics.state.ready')) . '</dt><dd>'
+            . Layout::escape(I18n::t('diagnostics.glossary.ready')) . '</dd>'
+            . '<dt>' . Layout::escape(I18n::t('diagnostics.state.attention')) . '</dt><dd>'
+            . Layout::escape(I18n::t('diagnostics.glossary.attention')) . '</dd>'
+            . '<dt>' . Layout::escape(I18n::t('diagnostics.state.unavailable')) . '</dt><dd>'
+            . Layout::escape(I18n::t('diagnostics.glossary.unavailable')) . '</dd></dl></section>';
+        $body .= '<p class="bcp-docs-help">' . Layout::escape(I18n::t('diagnostics.docs.prefix')) . ' '
+            . Layout::docsLink(I18n::t('diagnostics.docs.link')) . '</p>';
 
         return Layout::card(
-            Layout::header('Diagnóstico', 'Verificações de leitura para facilitar a configuração e explicar o que precisa de atenção.'),
+            Layout::header(I18n::t('diagnostics.header.title'), I18n::t('diagnostics.header.description')),
             Layout::tabs($base, 'diagnostics') . $body
         );
     }
@@ -82,16 +88,23 @@ final class DiagnosticsView
                 default => $base . '&action=operation',
             };
             $state = (string) ($check['state'] ?? 'unknown');
-            $rows .= '<li><span class="bcp-diag-state is-' . Layout::escape($state) . '">' . Layout::escape($state) . '</span><div><strong>'
-                . Layout::escape((string) ($check['title'] ?? 'Verificação')) . '</strong><p>'
+            $rows .= '<li><span class="bcp-diag-state is-' . Layout::escape($state) . '">' . Layout::escape(self::stateLabel($state)) . '</span><div><strong>'
+                . Layout::escape((string) ($check['title'] ?? I18n::t('diagnostics.check.fallbackTitle'))) . '</strong><p>'
                 . Layout::escape((string) ($check['detail'] ?? '')) . '</p><small>'
                 . Layout::escape((string) ($check['checkedAt'] ?? '')) . '</small></div><a class="btn btn-default" href="' . Layout::escape($href) . '">'
-                . Layout::escape((string) ($check['action'] ?? 'Abrir')) . '</a></li>';
+                . Layout::escape((string) ($check['action'] ?? I18n::t('diagnostics.actions.open'))) . '</a></li>';
         }
         if ($rows === '') {
-            $rows = '<li><span class="bcp-diag-state is-muted">indisponível</span><div><strong>As verificações não puderam ser carregadas.</strong><p>Tente novamente dentro do WHMCS.</p></div></li>';
+            $rows = '<li><span class="bcp-diag-state is-muted">'
+                . Layout::escape(I18n::t('diagnostics.state.unavailable')) . '</span><div><strong>'
+                . Layout::escape(I18n::t('diagnostics.checks.emptyTitle')) . '</strong><p>'
+                . Layout::escape(I18n::t('diagnostics.checks.emptyDescription')) . '</p></div></li>';
         }
-        return '<section class="bcp-diagnostic-section bcp-diagnostic-overview"><div class="bcp-section-heading"><div><span class="bcp-eyebrow">ESTADO GERAL: ' . Layout::escape($overall) . '</span><h4>Conexão, URL pública, catálogo e rotina</h4><p>Inclui credencial, conectividade, URL HTTPS do receiver, assinatura, atualização do catálogo, cron e integridade dos produtos.</p></div></div><ul class="bcp-diagnostic-list">' . $rows . '</ul></section>';
+        return '<section class="bcp-diagnostic-section bcp-diagnostic-overview"><div class="bcp-section-heading"><div><span class="bcp-eyebrow">'
+            . Layout::escape(I18n::t('diagnostics.checks.overall', ['state' => self::stateLabel($overall)]))
+            . '</span><h4>' . Layout::escape(I18n::t('diagnostics.checks.title')) . '</h4><p>'
+            . Layout::escape(I18n::t('diagnostics.checks.description')) . '</p></div></div><ul class="bcp-diagnostic-list">'
+            . $rows . '</ul></section>';
     }
 
     /** @param array<string,mixed> $readiness */
@@ -104,9 +117,28 @@ final class DiagnosticsView
                 continue;
             }
             $ready = !empty($step['ready']);
-            $rows .= '<li><span class="bcp-diag-state ' . ($ready ? 'is-ok' : 'is-attention') . '">' . ($ready ? 'pronto' : 'pendente')
-                . '</span><div><strong>' . Layout::escape((string) ($step['label'] ?? 'Etapa')) . '</strong></div></li>';
+            $rows .= '<li><span class="bcp-diag-state ' . ($ready ? 'is-ok' : 'is-attention') . '">'
+                . Layout::escape(I18n::t($ready ? 'diagnostics.state.ready' : 'diagnostics.state.pending'))
+                . '</span><div><strong>' . Layout::escape((string) ($step['label'] ?? I18n::t('diagnostics.readiness.fallbackStep')))
+                . '</strong></div></li>';
         }
-        return $rows === '' ? '' : '<section class="bcp-diagnostic-section"><div class="bcp-section-heading"><div><h4>Prontidão da integração</h4><p>Resumo do roteiro de configuração do módulo.</p></div><a class="btn btn-default" href="' . Layout::escape($base . '&action=overview') . '">Ver roteiro</a></div><ul class="bcp-diagnostic-list">' . $rows . '</ul></section>';
+        return $rows === '' ? '' : '<section class="bcp-diagnostic-section"><div class="bcp-section-heading"><div><h4>'
+            . Layout::escape(I18n::t('diagnostics.readiness.title')) . '</h4><p>'
+            . Layout::escape(I18n::t('diagnostics.readiness.description')) . '</p></div><a class="btn btn-default" href="'
+            . Layout::escape($base . '&action=overview') . '">'
+            . Layout::escape(I18n::t('diagnostics.actions.viewGuide')) . '</a></div><ul class="bcp-diagnostic-list">'
+            . $rows . '</ul></section>';
+    }
+
+    private static function stateLabel(string $state): string
+    {
+        $key = match ($state) {
+            'ok', 'ready' => 'diagnostics.state.ready',
+            'attention', 'warning' => 'diagnostics.state.attention',
+            'pending' => 'diagnostics.state.pending',
+            'unknown', 'unavailable', 'muted' => 'diagnostics.state.unavailable',
+            default => '',
+        };
+        return $key === '' ? $state : I18n::t($key);
     }
 }

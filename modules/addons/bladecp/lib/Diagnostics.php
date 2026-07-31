@@ -8,6 +8,7 @@ use WHMCS\Module\Server\Bladecp\Api\Exceptions\AuthException;
 use WHMCS\Module\Server\Bladecp\Helpers\AdminServerContext;
 use WHMCS\Module\Server\Bladecp\Helpers\CacheStore;
 use WHMCS\Module\Server\Bladecp\Helpers\ServerConfig;
+use WHMCS\Module\Addon\Bladecp\Admin\I18n;
 
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
@@ -52,13 +53,13 @@ final class Diagnostics
         return self::check(
             'credential',
             $configured ? 'ok' : 'blocked',
-            'Credencial da API',
+            I18n::t('viewmodels.diagnostics.credential.title'),
             $configured
-                ? 'Há uma credencial de servidor configurada. O valor nunca é exibido aqui.'
-                : 'Não há uma credencial de servidor utilizável.',
+                ? I18n::t('viewmodels.diagnostics.credential.configuredDetail')
+                : I18n::t('viewmodels.diagnostics.credential.notConfiguredDetail'),
             $configured
-                ? 'Use o teste de conectividade para confirmar a autorização.'
-                : 'Configure o Access Hash no servidor BladeCP do WHMCS.'
+                ? I18n::t('viewmodels.diagnostics.credential.configuredAction')
+                : I18n::t('viewmodels.diagnostics.credential.notConfiguredAction')
         );
     }
 
@@ -67,17 +68,17 @@ final class Diagnostics
     {
         $client = self::client();
         if ($client === null) {
-            return self::check('api', 'blocked', 'Conectividade com a API', 'A API não foi consultada porque o servidor não está configurado.', 'Configure a credencial do servidor e teste novamente.');
+            return self::check('api', 'blocked', I18n::t('viewmodels.diagnostics.api.title'), I18n::t('viewmodels.diagnostics.api.serverNotConfiguredDetail'), I18n::t('viewmodels.diagnostics.api.serverNotConfiguredAction'));
         }
         try {
             // Uma consulta pequena valida DNS, TLS e autorização sem escrever
             // nada nem carregar o catálogo completo.
             $client->get('/partner/plans?limit=1');
-            return self::check('api', 'ok', 'Conectividade com a API', 'A API respondeu usando a credencial configurada.', 'Nenhuma ação necessária.');
+            return self::check('api', 'ok', I18n::t('viewmodels.diagnostics.api.title'), I18n::t('viewmodels.diagnostics.api.okDetail'), I18n::t('viewmodels.diagnostics.actionNone'));
         } catch (AuthException) {
-            return self::check('api', 'blocked', 'Conectividade com a API', 'A API recusou a credencial configurada.', 'Revise o Access Hash e as permissões da conta Partner.');
+            return self::check('api', 'blocked', I18n::t('viewmodels.diagnostics.api.title'), I18n::t('viewmodels.diagnostics.api.authRejectedDetail'), I18n::t('viewmodels.diagnostics.api.authRejectedAction'));
         } catch (\Throwable) {
-            return self::check('api', 'unknown', 'Conectividade com a API', 'Não foi possível confirmar a conectividade agora.', 'Tente novamente. Se persistir, verifique a saída HTTPS deste servidor.');
+            return self::check('api', 'unknown', I18n::t('viewmodels.diagnostics.api.title'), I18n::t('viewmodels.diagnostics.api.unknownDetail'), I18n::t('viewmodels.diagnostics.api.unknownAction'));
         }
     }
 
@@ -85,27 +86,27 @@ final class Diagnostics
     private static function receiverUrl(): array
     {
         if (!class_exists(WebhookConfig::class)) {
-            return self::check('receiver_url', 'unknown', 'URL pública do receiver', 'A configuração do receiver não está disponível neste contexto.', 'Abra o diagnóstico dentro do addon BladeCP.');
+            return self::check('receiver_url', 'unknown', I18n::t('viewmodels.diagnostics.receiverUrl.title'), I18n::t('viewmodels.diagnostics.receiverUrl.unavailableDetail'), I18n::t('viewmodels.diagnostics.openAddonAction'));
         }
         $status = WebhookConfig::classifyPublicUrl();
-        return self::check('receiver_url', $status['state'], 'URL pública do receiver', $status['detail'], $status['action']);
+        return self::check('receiver_url', $status['state'], I18n::t('viewmodels.diagnostics.receiverUrl.title'), $status['detail'], $status['action']);
     }
 
     /** @return array{id:string,state:string,title:string,detail:string,action:string,checkedAt:string} */
     private static function webhookConfiguration(): array
     {
         if (!class_exists(WebhookConfig::class)) {
-            return self::check('webhook', 'unknown', 'Assinatura e endpoint', 'A configuração de webhook não está disponível neste contexto.', 'Abra o diagnóstico dentro do addon BladeCP.');
+            return self::check('webhook', 'unknown', I18n::t('viewmodels.diagnostics.webhook.title'), I18n::t('viewmodels.diagnostics.webhook.unavailableDetail'), I18n::t('viewmodels.diagnostics.openAddonAction'));
         }
         $endpoint = WebhookConfig::getEndpointId() !== '';
         $secret = WebhookConfig::hasSecret();
         if ($endpoint && $secret) {
-            return self::check('webhook', 'ok', 'Assinatura e endpoint', 'O endpoint registrado e o segredo de assinatura estão presentes.', 'Nenhuma ação necessária.');
+            return self::check('webhook', 'ok', I18n::t('viewmodels.diagnostics.webhook.title'), I18n::t('viewmodels.diagnostics.webhook.okDetail'), I18n::t('viewmodels.diagnostics.actionNone'));
         }
         if (!$endpoint && !$secret) {
-            return self::check('webhook', 'attention', 'Assinatura e endpoint', 'Os webhooks ainda não foram conectados.', 'Conecte os webhooks depois de confirmar uma URL HTTPS pública.');
+            return self::check('webhook', 'attention', I18n::t('viewmodels.diagnostics.webhook.title'), I18n::t('viewmodels.diagnostics.webhook.notConnectedDetail'), I18n::t('viewmodels.diagnostics.webhook.notConnectedAction'));
         }
-        return self::check('webhook', 'blocked', 'Assinatura e endpoint', 'A configuração do webhook está incompleta.', 'Reconecte os webhooks para registrar endpoint e assinatura novamente.');
+        return self::check('webhook', 'blocked', I18n::t('viewmodels.diagnostics.webhook.title'), I18n::t('viewmodels.diagnostics.webhook.incompleteDetail'), I18n::t('viewmodels.diagnostics.webhook.incompleteAction'));
     }
 
     /** @return array{id:string,state:string,title:string,detail:string,action:string,checkedAt:string} */
@@ -113,20 +114,20 @@ final class Diagnostics
     {
         $client = self::client();
         if ($client === null || !class_exists(CacheStore::class)) {
-            return self::check('catalog', 'unknown', 'Atualização do catálogo', 'Ainda não há uma atualização de catálogo observável neste servidor.', 'Abra Planos ou execute uma sincronização para carregar o catálogo.');
+            return self::check('catalog', 'unknown', I18n::t('viewmodels.diagnostics.catalog.title'), I18n::t('viewmodels.diagnostics.catalog.notObservedDetail'), I18n::t('viewmodels.diagnostics.catalog.loadAction'));
         }
 
         foreach (self::CATALOG_CACHE_NAMES as $name) {
             if (CacheStore::read($client, $name, 3600) !== null) {
-                return self::check('catalog', 'ok', 'Atualização do catálogo', 'O cache local do catálogo foi atualizado há menos de uma hora.', 'Nenhuma ação necessária.');
+                return self::check('catalog', 'ok', I18n::t('viewmodels.diagnostics.catalog.title'), I18n::t('viewmodels.diagnostics.catalog.freshDetail'), I18n::t('viewmodels.diagnostics.actionNone'));
             }
         }
         foreach (self::CATALOG_CACHE_NAMES as $name) {
             if (CacheStore::read($client, $name, PHP_INT_MAX) !== null) {
-                return self::check('catalog', 'attention', 'Atualização do catálogo', 'Há um cache de catálogo registrado, mas ele está antigo.', 'Atualize o catálogo antes de revisar ou publicar novos produtos.');
+                return self::check('catalog', 'attention', I18n::t('viewmodels.diagnostics.catalog.title'), I18n::t('viewmodels.diagnostics.catalog.staleDetail'), I18n::t('viewmodels.diagnostics.catalog.staleAction'));
             }
         }
-        return self::check('catalog', 'unknown', 'Atualização do catálogo', 'Ainda não há uma atualização de catálogo observável neste servidor.', 'Abra Planos ou execute uma sincronização para carregar o catálogo.');
+        return self::check('catalog', 'unknown', I18n::t('viewmodels.diagnostics.catalog.title'), I18n::t('viewmodels.diagnostics.catalog.notObservedDetail'), I18n::t('viewmodels.diagnostics.catalog.loadAction'));
     }
 
     /** @return array{id:string,state:string,title:string,detail:string,action:string,checkedAt:string} */
@@ -134,10 +135,10 @@ final class Diagnostics
     {
         $serverId = self::managementServerId();
         if ($serverId === null) {
-            return self::check('cron', 'unknown', 'Sincronização programada', 'A sincronização não pode ser associada a um servidor BladeCP administrativo.', 'Selecione um servidor BladeCP na Configuração antes de avaliar o cron.');
+            return self::check('cron', 'unknown', I18n::t('viewmodels.diagnostics.cron.title'), I18n::t('viewmodels.diagnostics.cron.serverUnavailableDetail'), I18n::t('viewmodels.diagnostics.cron.serverUnavailableAction'));
         }
         if (!class_exists(\WHMCS\Database\Capsule::class)) {
-            return self::check('cron', 'unknown', 'Sincronização programada', 'O histórico do cron não está disponível neste contexto.', 'Confirme que o cron diário nativo do WHMCS está ativo.');
+            return self::check('cron', 'unknown', I18n::t('viewmodels.diagnostics.cron.title'), I18n::t('viewmodels.diagnostics.cron.historyUnavailableDetail'), I18n::t('viewmodels.diagnostics.cron.historyUnavailableAction'));
         }
         try {
             $row = \WHMCS\Database\Capsule::table('tblactivitylog')
@@ -148,25 +149,25 @@ final class Diagnostics
             $date = $row === null ? '' : trim((string) ($row->date ?? ''));
             $timestamp = $date !== '' ? strtotime($date) : false;
             if ($timestamp === false) {
-                return self::check('cron', 'unknown', 'Sincronização programada', 'Ainda não há execução observável da sincronização diária para este servidor.', 'Confirme o cron diário do WHMCS e aguarde a próxima execução.');
+                return self::check('cron', 'unknown', I18n::t('viewmodels.diagnostics.cron.title'), I18n::t('viewmodels.diagnostics.cron.notObservedDetail'), I18n::t('viewmodels.diagnostics.cron.notObservedAction'));
             }
             $description = trim((string) ($row->description ?? ''));
             if (str_starts_with($description, 'BladeCP cron sync: failed;')) {
-                return self::check('cron', 'attention', 'Sincronização programada', 'A última sincronização registrada falhou.', 'Revise o log de atividades do WHMCS e tente novamente depois de corrigir a causa.');
+                return self::check('cron', 'attention', I18n::t('viewmodels.diagnostics.cron.title'), I18n::t('viewmodels.diagnostics.cron.failedDetail'), I18n::t('viewmodels.diagnostics.cron.failedAction'));
             }
             if (str_starts_with($description, 'BladeCP cron sync: skipped;')) {
-                return self::check('cron', 'attention', 'Sincronização programada', 'A última sincronização registrada foi ignorada por falta de contexto ou catálogo utilizável.', 'Revise a configuração do servidor e a conectividade com a API.');
+                return self::check('cron', 'attention', I18n::t('viewmodels.diagnostics.cron.title'), I18n::t('viewmodels.diagnostics.cron.skippedDetail'), I18n::t('viewmodels.diagnostics.cron.skippedAction'));
             }
             if (time() - $timestamp <= 172800
                 && str_starts_with($description, 'BladeCP cron sync: completed;')) {
-                return self::check('cron', 'ok', 'Sincronização programada', 'A sincronização registrou conclusão para este servidor nos últimos dois dias.', 'Nenhuma ação necessária.');
+                return self::check('cron', 'ok', I18n::t('viewmodels.diagnostics.cron.title'), I18n::t('viewmodels.diagnostics.cron.okDetail'), I18n::t('viewmodels.diagnostics.actionNone'));
             }
             if (str_starts_with($description, 'BladeCP cron sync: completed;')) {
-                return self::check('cron', 'attention', 'Sincronização programada', 'A última sincronização concluída deste servidor é antiga.', 'Confirme se o cron diário do WHMCS está sendo executado.');
+                return self::check('cron', 'attention', I18n::t('viewmodels.diagnostics.cron.title'), I18n::t('viewmodels.diagnostics.cron.staleDetail'), I18n::t('viewmodels.diagnostics.cron.staleAction'));
             }
-            return self::check('cron', 'unknown', 'Sincronização programada', 'O último registro de cron não possui um resultado reconhecido.', 'Confira o log de atividades do WHMCS e execute uma reconciliação do catálogo.');
+            return self::check('cron', 'unknown', I18n::t('viewmodels.diagnostics.cron.title'), I18n::t('viewmodels.diagnostics.cron.unrecognisedDetail'), I18n::t('viewmodels.diagnostics.cron.unrecognisedAction'));
         } catch (\Throwable) {
-            return self::check('cron', 'unknown', 'Sincronização programada', 'Não foi possível consultar o histórico do cron.', 'Confirme o cron diário do WHMCS.');
+            return self::check('cron', 'unknown', I18n::t('viewmodels.diagnostics.cron.title'), I18n::t('viewmodels.diagnostics.cron.queryFailedDetail'), I18n::t('viewmodels.diagnostics.cron.historyUnavailableAction'));
         }
     }
 
@@ -176,10 +177,10 @@ final class Diagnostics
         $scope = class_exists(IntegrationReadiness::class)
             ? IntegrationReadiness::scope() : null;
         if ($scope === null) {
-            return self::check('integrity', 'unknown', 'Integridade dos vínculos', 'Não foi possível associar os produtos a um único servidor e grupo BladeCP.', 'Selecione um servidor administrativo e revise os grupos de servidores.');
+            return self::check('integrity', 'unknown', I18n::t('viewmodels.diagnostics.integrity.title'), I18n::t('viewmodels.diagnostics.integrity.scopeUnknownDetail'), I18n::t('viewmodels.diagnostics.integrity.scopeUnknownAction'));
         }
         if (!class_exists(\WHMCS\Database\Capsule::class)) {
-            return self::check('integrity', 'unknown', 'Integridade dos vínculos', 'A base do WHMCS não está disponível neste contexto.', 'Abra esta tela dentro do WHMCS para verificar os produtos importados.');
+            return self::check('integrity', 'unknown', I18n::t('viewmodels.diagnostics.integrity.title'), I18n::t('viewmodels.diagnostics.integrity.databaseUnavailableDetail'), I18n::t('viewmodels.diagnostics.integrity.databaseUnavailableAction'));
         }
         try {
             $products = \WHMCS\Database\Capsule::table('tblproducts')
@@ -188,7 +189,7 @@ final class Diagnostics
                 ->get(['id', 'configoption1', 'configoption2']);
             $total = count($products);
             if ($total === 0) {
-                return self::check('integrity', 'unknown', 'Integridade dos vínculos', 'Ainda não há produtos BladeCP importados.', 'Importe o catálogo quando a configuração estiver pronta.');
+                return self::check('integrity', 'unknown', I18n::t('viewmodels.diagnostics.integrity.title'), I18n::t('viewmodels.diagnostics.integrity.noProductsDetail'), I18n::t('viewmodels.diagnostics.integrity.noProductsAction'));
             }
             $invalid = 0;
             foreach ($products as $product) {
@@ -197,11 +198,11 @@ final class Diagnostics
                 }
             }
             if ($invalid === 0) {
-                return self::check('integrity', 'ok', 'Integridade dos vínculos', $total . ' produto(s) BladeCP têm tipo e plano vinculados.', 'Nenhuma ação necessária.');
+                return self::check('integrity', 'ok', I18n::t('viewmodels.diagnostics.integrity.title'), I18n::t('viewmodels.diagnostics.integrity.okDetail', ['count' => $total]), I18n::t('viewmodels.diagnostics.actionNone'));
             }
-            return self::check('integrity', 'attention', 'Integridade dos vínculos', $invalid . ' de ' . $total . ' produto(s) BladeCP precisam ter o vínculo com o plano revisado.', 'Abra Planos e execute a reconciliação do catálogo antes de disponibilizar vendas.');
+            return self::check('integrity', 'attention', I18n::t('viewmodels.diagnostics.integrity.title'), I18n::t('viewmodels.diagnostics.integrity.invalidDetail', ['invalid' => $invalid, 'total' => $total]), I18n::t('viewmodels.diagnostics.integrity.invalidAction'));
         } catch (\Throwable) {
-            return self::check('integrity', 'unknown', 'Integridade dos vínculos', 'Não foi possível validar os vínculos dos produtos agora.', 'Tente novamente dentro do WHMCS.');
+            return self::check('integrity', 'unknown', I18n::t('viewmodels.diagnostics.integrity.title'), I18n::t('viewmodels.diagnostics.integrity.queryFailedDetail'), I18n::t('viewmodels.diagnostics.integrity.queryFailedAction'));
         }
     }
 
