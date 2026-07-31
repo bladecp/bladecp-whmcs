@@ -1,0 +1,59 @@
+name: Bug report
+description: Report a reproducible problem with the BladeCP WHMCS module.
+title: "Bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve the module. Please remove credentials, customer data, and other sensitive information before submitting.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and its impact.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide the smallest reliable sequence that reproduces the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Explain what you expected to happen instead.
+    validations:
+      required: true
+  - type: input
+    id: module-version
+    attributes:
+      label: Module version
+      description: Enter the released module version you are using.
+    validations:
+      required: true
+  - type: input
+    id: whmcs-version
+    attributes:
+      label: WHMCS version
+      description: Enter your WHMCS version.
+    validations:
+      required: true
+  - type: input
+    id: php-version
+    attributes:
+      label: PHP version
+      description: Enter the PHP version used by WHMCS.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Relevant logs or screenshots
+      description: Add sanitized logs, error messages, or screenshots that help explain the issue.
+    validations:
+      required: false

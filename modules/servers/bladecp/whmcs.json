@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "type": "whmcs-servers",
+  "name": "bladecp",
+  "displayName": "BladeCP",
+  "description": "Provisiona produtos BladeCP compatíveis (Stack Container, Edge Cloud e Dedicated) via Customer API. Módulo único com discriminador BladeCP Product Type.",
+  "version": "0.9.0-rc.3",
+  "author": "BladeCP",
+  "language": "php",
+  "minPhpVersion": "8.1"
+}
