@@ -12,12 +12,14 @@
 
 Release candidate: **0.9.0-rc.4**
 
+This pre-release is for partner validation. Test it in a non-production WHMCS environment before customer use.
+
 [![Release candidate](https://img.shields.io/badge/release-0.9.0--rc.4-4f46e5)](https://github.com/bladecp/bladecp-whmcs/releases)
 [![License](https://img.shields.io/badge/license-MIT-4f46e5)](LICENSE)
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-4f46e5?logo=php&logoColor=white)
 ![WHMCS 8.x and 9.x](https://img.shields.io/badge/WHMCS-8.x%20%7C%209.x-4f46e5)
 
-[Download the latest release](https://github.com/bladecp/bladecp-whmcs/releases) · [Install](#installation) · [Configure](#configuration) · [Security](#security) · [Release process](docs/release-process.md) · [Português (Brasil)](README.pt-BR.md) · [Español](README.es.md)
+[Download the latest release](https://github.com/bladecp/bladecp-whmcs/releases) · [Install](#installation) · [Installation guide](docs/installation.md) · [Troubleshooting](docs/troubleshooting.md) · [Configure](#configuration) · [Security](#security) · [Release process](docs/release-process.md) · [Português (Brasil)](README.pt-BR.md) · [Español](README.es.md)
 
 [![Public CI](https://github.com/bladecp/bladecp-whmcs/actions/workflows/ci.yml/badge.svg)](https://github.com/bladecp/bladecp-whmcs/actions/workflows/ci.yml)
 
@@ -102,12 +104,14 @@ installation before making it available to customers.
 - Administrative access to a compatible WHMCS installation.
 - A BladeCP partner account.
 - A BladeCP Customer API key.
-- PHP with the cURL extension enabled.
+- PHP with the cURL, JSON and OpenSSL extensions enabled.
+- Outbound HTTPS access to `api.bladecp.com`.
+- A working WHMCS daily cron for usage synchronization, billing automation and scheduled catalog synchronization.
 - A public HTTPS endpoint if you enable incoming webhooks.
 
 ## Installation
 
-Install from a [GitHub Release](https://github.com/bladecp/bladecp-whmcs/releases), not from a source snapshot.
+Install from a [GitHub Release](https://github.com/bladecp/bladecp-whmcs/releases), not from a source snapshot. See the [detailed installation guide](docs/installation.md) for the full procedure.
 
 1. Download the release ZIP and its accompanying `SHA256SUMS` file.
 2. Verify the artifact from the directory that contains both files:
@@ -116,7 +120,14 @@ Install from a [GitHub Release](https://github.com/bladecp/bladecp-whmcs/release
    shasum -a 256 -c SHA256SUMS
    ```
 
-3. Extract the ZIP into the root of your WHMCS installation. After extraction, these directories must exist:
+   On Linux, you can instead run:
+
+   ```bash
+   sha256sum -c SHA256SUMS
+   ```
+
+3. Back up your WHMCS files and database before updating or installing the module.
+4. Extract the ZIP into the root of your WHMCS installation. After extraction, these directories must exist:
 
    ```text
    modules/servers/bladecp/
@@ -126,9 +137,13 @@ Install from a [GitHub Release](https://github.com/bladecp/bladecp-whmcs/release
    The installable ZIP contains only `modules/`. It does not overwrite a
    WHMCS root README, license or documentation file.
 
-4. In WHMCS, create or select a server under **System Settings → Products/Services → Servers**.
-5. Configure the BladeCP connection, then run **Test Connection** before assigning the module to a product.
-6. To use guided setup, catalog tools, configurable options or webhooks, activate **BladeCP** under **System Settings → Addon Modules**.
+5. In WHMCS, create or select a server under **System Settings → Products/Services → Servers**.
+6. Configure the BladeCP connection, then run **Test Connection** before assigning the module to a product.
+7. To use guided setup, catalog tools, configurable options or webhooks, activate **BladeCP** under **System Settings → Addon Modules**.
+
+### Updating
+
+For an update, verify the release checksum and back up your WHMCS files and database first. Extract the new ZIP over the existing WHMCS root. Do not delete the existing `modules/servers/bladecp/` or `modules/addons/bladecp/` directories before extracting the update. Your server records, products and module settings remain in WHMCS. See the [detailed installation guide](docs/installation.md) for the complete update procedure.
 
 ## Configuration
 

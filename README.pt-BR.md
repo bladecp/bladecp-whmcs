@@ -12,12 +12,14 @@
 
 Versão candidata: **0.9.0-rc.4**
 
+Esta é uma pré-release para validação de parceiros. Teste-a fora de produção antes de disponibilizá-la aos clientes.
+
 [![Release candidate](https://img.shields.io/badge/release-0.9.0--rc.4-4f46e5)](https://github.com/bladecp/bladecp-whmcs/releases)
 [![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-4f46e5)](LICENSE)
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-4f46e5?logo=php&logoColor=white)
 ![WHMCS 8.x e 9.x](https://img.shields.io/badge/WHMCS-8.x%20%7C%209.x-4f46e5)
 
-[Baixar a versão mais recente](https://github.com/bladecp/bladecp-whmcs/releases) · [Instalar](#instalação) · [Configurar](#configuração) · [Segurança](#segurança) · [Processo de release](docs/release-process.md) · [English](README.md) · [Español](README.es.md)
+[Baixar a versão mais recente](https://github.com/bladecp/bladecp-whmcs/releases) · [Instalar](#instalação) · [Guia de instalação](docs/installation.md) · [Solução de problemas](docs/troubleshooting.md) · [Configurar](#configuração) · [Segurança](#segurança) · [Processo de release](docs/release-process.md) · [English](README.md) · [Español](README.es.md)
 
 [![CI público](https://github.com/bladecp/bladecp-whmcs/actions/workflows/ci.yml/badge.svg)](https://github.com/bladecp/bladecp-whmcs/actions/workflows/ci.yml)
 
@@ -100,14 +102,16 @@ de disponibilizá-la aos clientes.
 ## Requisitos
 
 - Acesso administrativo a uma instalação WHMCS compatível.
-- Conta partner BladeCP.
+- Conta de parceiro BladeCP.
 - Chave da Customer API BladeCP.
-- PHP com a extensão cURL habilitada.
+- Extensões PHP cURL, JSON e OpenSSL habilitadas.
+- Acesso HTTPS de saída a `api.bladecp.com`.
+- Cron diário funcional do WHMCS para sincronização de uso, automação de cobrança e sincronização programada de catálogo.
 - Endpoint HTTPS público caso você habilite webhooks de entrada.
 
 ## Instalação
 
-Instale a partir de uma [GitHub Release](https://github.com/bladecp/bladecp-whmcs/releases), não de um snapshot do código-fonte.
+Instale a partir de uma [GitHub Release](https://github.com/bladecp/bladecp-whmcs/releases), não de um snapshot do código-fonte. Consulte o [guia detalhado de instalação](docs/installation.md) para o procedimento completo.
 
 1. Baixe o ZIP da release e o arquivo `SHA256SUMS` correspondente.
 2. Verifique o artefato no diretório que contém os dois arquivos:
@@ -116,7 +120,14 @@ Instale a partir de uma [GitHub Release](https://github.com/bladecp/bladecp-whmc
    shasum -a 256 -c SHA256SUMS
    ```
 
-3. Extraia o ZIP na raiz da instalação WHMCS. Ao fim, estes diretórios devem existir:
+   Em Linux, use:
+
+   ```bash
+   sha256sum -c SHA256SUMS
+   ```
+
+3. Antes de instalar ou atualizar o módulo, faça um backup da instalação WHMCS e do banco de dados.
+4. Extraia o ZIP na raiz da instalação WHMCS. Ao fim, estes diretórios devem existir:
 
    ```text
    modules/servers/bladecp/
@@ -126,9 +137,13 @@ Instale a partir de uma [GitHub Release](https://github.com/bladecp/bladecp-whmc
    O ZIP instalável contém somente `modules/`. Ele não sobrescreve README,
    licença nem documentação da raiz do WHMCS.
 
-4. No WHMCS, crie ou selecione um servidor em **Configurações do Sistema → Produtos/Serviços → Servidores**.
-5. Configure a conexão BladeCP e execute **Test Connection** antes de atribuir o módulo a um produto.
-6. Para usar setup guiado, ferramentas de catálogo, opções configuráveis ou webhooks, ative **BladeCP** em **Configurações do Sistema → Módulos de Addon**.
+5. No WHMCS, crie ou selecione um servidor em **Configurações do Sistema → Produtos/Serviços → Servidores**.
+6. Configure a conexão BladeCP e execute **Test Connection** antes de atribuir o módulo a um produto.
+7. Para usar setup guiado, ferramentas de catálogo, opções configuráveis ou webhooks, ative **BladeCP** em **Configurações do Sistema → Módulos de Addon**.
+
+### Atualização
+
+Antes de atualizar, verifique o checksum da release e faça backup da instalação WHMCS e do banco de dados. Extraia o ZIP sobre a raiz existente, sem apagar antes os diretórios `modules/servers/bladecp/` e `modules/addons/bladecp/`. Seus registros de servidor, produtos e configurações existentes serão preservados. Consulte o [guia detalhado de instalação](docs/installation.md) para orientações completas de atualização.
 
 ## Configuração
 
