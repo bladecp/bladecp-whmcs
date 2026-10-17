@@ -20,7 +20,8 @@ final class ConfigOptions
                 'Type' => 'dropdown',
                 'Options' => implode(',', ProductCapability::configurableTypes()),
                 'Default' => 'stack-container',
-                'Description' => 'Discriminador — define qual produto BladeCP este produto WHMCS provisiona.',
+                'Description' => '<span hidden data-bcp-config-owner="bladecp"></span>'
+                    . 'Discriminador — define qual produto BladeCP este produto WHMCS provisiona.',
             ],
             'BladeCP Plan' => [
                 'Type' => 'dropdown',
@@ -40,6 +41,12 @@ final class ConfigOptions
                     . '(ex.: php-8.2,mysql,redis). Validados contra o '
                     . 'catálogo no provisioning. WHMCS não tem multi-select '
                     . 'nativo; a interface de configuração oferece a seleção assistida.',
+            ],
+            'BladeCP Vibe Plan Tier' => [
+                'Type' => 'dropdown',
+                'Options' => 'unknown,free,pro',
+                'Default' => 'unknown',
+                'Description' => 'Usado somente para Vibe. Define Free ou Pro quando o catálogo informar o nível comercial.',
             ],
         ];
     }

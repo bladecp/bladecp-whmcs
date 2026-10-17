@@ -15,6 +15,7 @@ final class PlanCatalog
         'stack-container',
         'edge-cloud',
         'dedicated',
+        'vibe',
     ];
 
     /**
@@ -53,7 +54,17 @@ final class PlanCatalog
             $reason = 'O catálogo não informou o tipo canônico do produto.';
         } elseif (!in_array($type, self::MODULE_TYPES, true)) {
             $reason = "O tipo '{$type}' ainda não possui handler neste módulo.";
-        } elseif (!$apiSupported) {
+        } elseif ($type === 'vibe' && ($plan['channelSupported'] ?? null) !== true) {
+            $reason = 'A Customer API não habilitou este plano Vibe para o canal WHMCS.';
+        } elseif ($type === 'vibe' && !in_array(
+            strtolower(trim((string) (($plan['vibe']['aiMode'] ?? '')))),
+            ['partner_ai', 'managed_ai'],
+            true
+        )) {
+            $reason = 'O catálogo não informou um modo de IA Vibe válido.';
+        } elseif ($type === 'vibe' && ($availability['readiness'] ?? '') !== 'ready') {
+            $reason = 'A Customer API não confirmou a prontidão deste plano Vibe.';
+        } elseif ($type !== 'vibe' && !$apiSupported) {
             $reason = 'A Customer API marcou o plano como indisponível para provisionamento.';
         } elseif ($activationMode !== 'auto' && $activationMode !== 'manual') {
             $reason = 'O modo de ativação do plano é desconhecido.';

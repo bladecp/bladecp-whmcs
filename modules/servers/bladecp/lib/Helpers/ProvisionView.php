@@ -384,4 +384,26 @@ final class ProvisionView
             return $raw;
         }
     }
+
+    /**
+     * Dia de cobrança (vencimento) em Brasília, `d/m/Y`. A API grava o
+     * vencimento como 23:59:59 America/Sao_Paulo; formatado em UTC ou no fuso
+     * do servidor do WHMCS ele virava o dia seguinte. `YYYY-MM-DD` já é o dia.
+     */
+    public static function formatBillingDay(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return '';
+        }
+        $zone = new \DateTimeZone('America/Sao_Paulo');
+        try {
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw) === 1) {
+                return (new \DateTimeImmutable($raw, $zone))->format('d/m/Y');
+            }
+            return (new \DateTimeImmutable($raw))->setTimezone($zone)->format('d/m/Y');
+        } catch (\Throwable) {
+            return $raw;
+        }
+    }
 }

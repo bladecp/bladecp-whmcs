@@ -196,21 +196,50 @@ final class ConfigSkin
   var LOGO=$logo,CAT=$cat,BURL=$burl,PURL=$purl,OFURL=$ofurl,
       ICB=$icBun,ICO=$icOf,ICP=$icPr,HELP=$help,TIPS=$tips,
       AURL=$aurl,ALBL=$albl,ATIT=$atit,AON=$aon,ICA=$icAddon,done=false;
+  var moved=[],hidden=[],shell=null,stopped=false,mo=null,iv=null;
+  function hide(node){
+    if(!node||!node.style)return;
+    hidden.push({node:node,display:node.style.display});
+    node.style.display='none';
+  }
+  function restore(){
+    moved.forEach(function(entry){
+      if(entry.anchor.isConnected){
+        entry.anchor.parentNode.replaceChild(entry.ctrl,entry.anchor);
+        if(entry.type!==null)entry.ctrl.setAttribute('type',entry.type);
+        else entry.ctrl.removeAttribute('type');
+        delete entry.ctrl.__bcpChips;
+      }
+    });
+    hidden.reverse().forEach(function(entry){entry.node.style.display=entry.display;});
+    if(shell&&shell.parentNode)shell.parentNode.removeChild(shell);
+    moved=[];hidden=[];shell=null;done=false;window.__bcpCfgSkinned=false;
+  }
+  // Restore native controls before WHMCS replaces module options over AJAX.
+  // After a module switch, leave the native form intact until the next load.
+  document.addEventListener('change',function(event){
+    if(!event.target||event.target.name!=='servertype')return;
+    stopped=true;
+    if(mo)mo.disconnect();
+    if(iv)clearInterval(iv);
+    restore();
+  },true);
   function build(){
-    if(done||window.__bcpCfgSkinned)return;
+    if(stopped||done||window.__bcpCfgSkinned)return;
     try{
       var st=document.querySelector('select[name="servertype"]')
         ||document.querySelector('#inputServerType');
-      if(!st)return;
+      if(!st||st.value!=='bladecp')return;
       var form=st.closest('form')||document;
       var pane=st.closest('div[role="tabpanel"]')
         ||st.closest('.tab-pane')||st.closest('[id^="tab"]')||form;
       // ConfigOptions do módulo (injetados via AJAX). Sem eles ainda
       // → espera (não monta card só com Module Name/Server Group).
-      if(!form.querySelector('[name^="packageconfigoption"]'))return;
+      if(!pane.querySelector('[data-bcp-config-owner="bladecp"]')
+        ||!pane.querySelector('[name^="packageconfigoption"]'))return;
 
       var seen=[],ctrls=[];
-      [].slice.call(form.querySelectorAll(
+      [].slice.call(pane.querySelectorAll(
         // servergroup é COLETADO (pra esconder o campo nativo — senão
         // ele vaza fora do card) mas NÃO renderizado: move pra um
         // holder oculto no loop abaixo. BladeCP roteia pela bcp_* key
@@ -237,6 +266,9 @@ final class ConfigSkin
         var cell=ctrl.closest('td')||row;
         var blk=ctrl.closest('table');
         if(blk&&blocks.indexOf(blk)<0)blocks.push(blk);
+        var anchor=document.createComment('bcp-config-control');
+        ctrl.parentNode.insertBefore(anchor,ctrl);
+        moved.push({ctrl:ctrl,anchor:anchor,type:ctrl.getAttribute('type')});
         // Server Group: inútil pro BladeCP (roteia pela bcp_* key do
         // Server record). Coletado só pra TIRAR o campo nativo do
         // fluxo (senão ele "vaza" embaixo do card) — move pra holder
@@ -248,7 +280,7 @@ final class ConfigSkin
           hgrp.style.display='none';
           hgrp.appendChild(ctrl);
           grid.appendChild(hgrp);
-          if(row&&row.style)row.style.display='none';
+          hide(row);
           return;
         }
         var lbl='';
@@ -347,7 +379,7 @@ final class ConfigSkin
           }catch(e){/* fica o input cru */}
         }
         grid.appendChild(fg);
-        if(row&&row.style)row.style.display='none';
+        hide(row);
       });
 
       // some os containers originais que ficaram sem campo (bordas
@@ -358,15 +390,15 @@ final class ConfigSkin
       blocks.forEach(function(b){
         try{
           if(b.querySelector(hasCtl))return;
-          b.style.display='none';
+          hide(b);
           var p=b.parentElement;
           if(p&&p!==pane&&p!==form&&!p.querySelector(hasCtl)){
-            p.style.display='none';
+            hide(p);
           }
         }catch(e){}
       });
 
-      var shell=document.createElement('div');
+      shell=document.createElement('div');
       shell.className='bcp-shell bcp-cfg';
       var card=document.createElement('div');
       card.className='bcp-card';
@@ -416,14 +448,14 @@ final class ConfigSkin
       shell.appendChild(card);
       pane.insertBefore(shell,pane.firstChild);
 
-      [].slice.call(document.querySelectorAll('a,button,span'))
+      [].slice.call(pane.querySelectorAll('a,button,span'))
         .forEach(function(n){
           if(n.children.length)return;
           var t=(n.textContent||'').trim();
           if(/advanced mode|modo avan|simple mode|modo simpl/i
-            .test(t)){n.style.display='none';}
+            .test(t)){hide(n);}
         });
-    }catch(e){/* fail-soft: tela do WHMCS segue intacta */}
+    }catch(e){stopped=true;restore();}
   }
   // Multi-select com chips sobre o input CSV original (escondido,
   // mas vivo: name/valor preservados → WHMCS salva igual). Buscável,
@@ -551,14 +583,14 @@ final class ConfigSkin
   build();
   if(!done){
     try{
-      var mo=new MutationObserver(function(){
-        build();if(done&&mo){mo.disconnect();}
+      mo=new MutationObserver(function(){
+        build();if((done||stopped)&&mo){mo.disconnect();}
       });
       mo.observe(document.documentElement,
         {childList:true,subtree:true});
     }catch(e){}
-    var n=0,iv=setInterval(function(){
-      build();if(done||++n>40){clearInterval(iv);}
+    var n=0;iv=setInterval(function(){
+      build();if(done||stopped||++n>40){clearInterval(iv);}
     },300);
   }
 })();</script>

@@ -10,6 +10,8 @@ use WHMCS\Module\Server\Bladecp\Helpers\Logger;
 use WHMCS\Module\Server\Bladecp\Helpers\AdminServerContext;
 use WHMCS\Module\Server\Bladecp\Helpers\SaleGuard;
 use WHMCS\Module\Server\Bladecp\Helpers\ServerConfig;
+use WHMCS\Module\Server\Bladecp\Helpers\VibePlanTier;
+use WHMCS\Module\Addon\Bladecp\Admin\I18n;
 
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
@@ -56,6 +58,9 @@ final class PlanSync
                 => ['group' => 'Nuvem Pública ' . self::BRAND, 'type' => '', 'order' => 3],
             $p === 'quantum steel'
                 => ['group' => 'Servidores Dedicados ' . self::BRAND, 'type' => 'dedicated', 'order' => 4],
+            strtolower(trim($productName)) === 'bladecp vibe'
+                || strtolower(trim($productName)) === 'vibe'
+                => ['group' => 'BladeCP Vibe', 'type' => 'vibe', 'order' => 5],
             // Produto novo mantém uma categoria legível, mas não recebe
             // fallback de provisionamento.
             default => [
@@ -78,6 +83,12 @@ final class PlanSync
     {
         return strtolower(trim((string) ($plan['type'] ?? '')))
             === 'stack-container';
+    }
+
+    /** Vibe is an account product, not an infrastructure provision. */
+    private static function isVibe(array $plan): bool
+    {
+        return strtolower(trim((string) ($plan['type'] ?? ''))) === 'vibe';
     }
 
     /**
@@ -170,6 +181,9 @@ final class PlanSync
             $planType = trim((string) ($row['planType'] ?? ''));
             $cat = self::categoryFor($productName, $planType);
             $classification = PlanCatalog::classify($row);
+            if ($classification['type'] === 'vibe') {
+                $cat = ['group' => 'BladeCP Vibe', 'type' => 'vibe', 'order' => 5];
+            }
             $sale = SaleGuard::decide($row);
             $supported = $classification['supported'] && $sale['allowed'];
             $out[] = [
@@ -194,10 +208,29 @@ final class PlanSync
                 'requiresContract' => $classification['requiresContract'],
                 'supportsContractTerms' => $classification['supportsContractTerms'],
                 'contractTerms' => $classification['contractTerms'],
+                'vibePlanTier' => self::vibePlanTier($row),
+                'vibeDiagnostics' => is_array($row['vibe']['diagnostics'] ?? null) ? $row['vibe']['diagnostics'] : [],
             ];
         }
 
         return $out;
+    }
+
+    /** @param array<string,mixed> $plan */
+    private static function vibePlanTier(array $plan): ?string
+    {
+        $vibe = is_array($plan['vibe'] ?? null) ? $plan['vibe'] : [];
+        foreach ([
+            $vibe['planTier'] ?? null,
+            $plan['planTier'] ?? null,
+        ] as $candidate) {
+            $tier = VibePlanTier::normalize($candidate);
+            if ($tier !== null) {
+                return $tier;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -269,14 +302,18 @@ final class PlanSync
      * @param array<string,mixed> $plan
      * @return array{ok:bool,pid:int,mode:string,error:?string}
      */
-    public static function importPlan(array $plan, ?int $comboId = null): array
+    public static function importPlan(
+        array $plan,
+        ?int $comboId = null,
+        bool $reconcileVibeNativeUpgrades = true
+    ): array
     {
         if (!class_exists(\WHMCS\Database\Capsule::class)) {
-            return ['ok' => false, 'pid' => 0, 'mode' => '', 'error' => 'Capsule indisponível.'];
+            return ['ok' => false, 'pid' => 0, 'mode' => '', 'error' => I18n::t('plans.import.database_unavailable')];
         }
         $planId = trim((string) ($plan['id'] ?? ''));
         if ($planId === '') {
-            return ['ok' => false, 'pid' => 0, 'mode' => 'skipped', 'error' => 'O catálogo não informou o id do plano.'];
+            return ['ok' => false, 'pid' => 0, 'mode' => 'skipped', 'error' => I18n::t('plans.import.missing_plan_id')];
         }
         $scope = self::serverScope();
         if ($scope === null) {
@@ -284,7 +321,7 @@ final class PlanSync
                 'ok' => false,
                 'pid' => 0,
                 'mode' => 'server-unavailable',
-                'error' => 'Selecione um servidor BladeCP exclusivo antes de importar planos.',
+                'error' => I18n::t('plans.import.server_required'),
             ];
         }
         $group = trim((string) ($plan['group'] ?? ''));
@@ -303,7 +340,7 @@ final class PlanSync
                 'ok' => false,
                 'pid' => 0,
                 'mode' => 'locked-failed',
-                'error' => 'Não foi possível concluir a importação agora. Nenhuma alteração parcial foi salva. Tente novamente.',
+                'error' => I18n::t('plans.import.failed'),
             ];
         }
         if (!is_array($result)) {
@@ -315,10 +352,24 @@ final class PlanSync
                 'ok' => false,
                 'pid' => 0,
                 'mode' => 'locked-failed',
-                'error' => 'Não foi possível obter o lock de importação do catálogo. Tente novamente.',
+                'error' => I18n::t('plans.import.lock_unavailable'),
             ];
         }
+        if ($reconcileVibeNativeUpgrades && ($result['ok'] ?? false) === true) {
+            self::reconcileVibeNativeUpgrades();
+        }
         return $result;
+    }
+
+    /**
+     * Atualiza os caminhos nativos de upgrade entre planos Vibe. A falha
+     * nunca invalida um import de catálogo já concluído.
+     *
+     * @return array{ok:bool,added:int,removed:int,retained:int,reason:?string}
+     */
+    public static function reconcileVibeNativeUpgrades(): array
+    {
+        return VibeNativeUpgradeSync::reconcile();
     }
 
     /**
@@ -348,6 +399,7 @@ final class PlanSync
             $pid = (int) $existingProduct->id;
             $existingGroupId = (int) ($existingProduct->gid ?? 0);
             self::ensureDomainRequirement($pid, (string) ($plan['type'] ?? ''));
+            self::reconcileVibePlanTier($pid, $plan);
             CatalogSlugs::reconcileProductRoute($pid, $existingGroupId > 0 ? $existingGroupId : null, (string) ($plan['name'] ?? ''));
             CatalogAvailabilitySync::reconcileProduct(
                 $pid,
@@ -362,14 +414,14 @@ final class PlanSync
                     'error' => null,
                 ];
             }
-            $locationReady = self::ensureLocationOptions($planId, $pid);
-            $contractReady = self::ensureContractOptions($planId, $pid, $plan);
+            $locationReady = self::isVibe($plan) || self::ensureLocationOptions($planId, $pid);
+            $contractReady = self::isVibe($plan) || self::ensureContractOptions($planId, $pid, $plan);
             if (!$locationReady || !$contractReady) {
                 return [
                     'ok' => false,
                     'pid' => $pid,
                     'mode' => 'existing-options-failed',
-                    'error' => 'O produto existente foi preservado, mas suas opções operacionais não puderam ser atualizadas.',
+                    'error' => I18n::t('plans.import.options_not_updated'),
                 ];
             }
             return ['ok' => true, 'pid' => $pid, 'mode' => 'exists', 'error' => null];
@@ -379,7 +431,7 @@ final class PlanSync
                 'ok' => false,
                 'pid' => 0,
                 'mode' => 'skipped',
-                'error' => (string) ($plan['reason'] ?? 'Plano indisponível para este módulo.'),
+                'error' => (string) ($plan['reason'] ?? I18n::t('plans.import.plan_unavailable')),
             ];
         }
         if (!ctype_digit($planId) || (int) $planId <= 0) {
@@ -387,16 +439,16 @@ final class PlanSync
                 'ok' => false,
                 'pid' => 0,
                 'mode' => 'skipped',
-                'error' => 'O catálogo não informou um id numérico válido para o plano.',
+                'error' => I18n::t('plans.import.invalid_plan_id'),
             ];
         }
-        $locations = self::locationsForPlan($planId);
-        if ($locations === []) {
+        $locations = self::isVibe($plan) ? [] : self::locationsForPlan($planId);
+        if (!self::isVibe($plan) && $locations === []) {
             return [
                 'ok' => false,
                 'pid' => 0,
                 'mode' => 'skipped',
-                'error' => 'O plano não possui location ativa e vinculada.',
+                'error' => I18n::t('plans.import.no_location'),
             ];
         }
         $groupId = self::productGroup((string) ($plan['group'] ?? ''), $scope['serverId']);
@@ -414,11 +466,12 @@ final class PlanSync
                 'description' => (string) ($plan['desc'] ?? ''),
                 'hidden' => 0,
                 'showdomainoptions' => self::requiresDomain($plan) ? 1 : 0,
-                'paytype' => 'recurring',
+                'paytype' => self::isFreeVibePlan($plan) ? 'free' : 'recurring',
                 'servertype' => 'bladecp',
                 'servergroup' => $scope['serverGroupId'],
                 'configoption1' => (string) ($plan['type'] ?? ''),
                 'configoption2' => $planId,
+                'configoption4' => self::isVibe($plan) ? (string) ($plan['vibePlanTier'] ?? 'unknown') : '',
                 'autosetup' => 'order',
                 'order' => ctype_digit($planId) ? (int) $planId : 0,
             ], $cols));
@@ -427,21 +480,21 @@ final class PlanSync
         }
         CatalogSlugs::reconcileProductRoute($pid, $groupId, (string) ($plan['name'] ?? ''));
 
-        if ($comboId !== null && $comboId > 0) {
+        if (!self::isVibe($plan) && $comboId !== null && $comboId > 0) {
             Combos::assignProduct($pid, $comboId);
             if (Combos::comboIdForProduct($pid) !== $comboId) {
                 throw new \RuntimeException('Não foi possível atribuir o combo ao produto.');
             }
-        } else {
+        } elseif (!self::isVibe($plan)) {
             $gid = ConfigurableOptions::groupId(false);
             if ($gid !== null) {
                 ConfigurableOptions::linkProduct($gid, $pid);
             }
         }
-        if (!LocationOptions::apply($planId, $pid, $locations)) {
+        if (!self::isVibe($plan) && !LocationOptions::apply($planId, $pid, $locations)) {
             throw new \RuntimeException('Não foi possível materializar as locations do plano.');
         }
-        if (!self::ensureContractOptions($planId, $pid, $plan)) {
+        if (!self::isVibe($plan) && !self::ensureContractOptions($planId, $pid, $plan)) {
             throw new \RuntimeException('Não foi possível materializar as opções contratuais.');
         }
         CatalogAvailabilitySync::reconcileProduct(
@@ -451,6 +504,38 @@ final class PlanSync
         );
 
         return ['ok' => true, 'pid' => $pid, 'mode' => 'created', 'error' => null];
+    }
+
+    /** @param array<string,mixed> $plan */
+    private static function reconcileVibePlanTier(int $productId, array $plan): void
+    {
+        if (!self::isVibe($plan) || $productId <= 0) {
+            return;
+        }
+        $tier = VibePlanTier::normalize($plan['vibePlanTier'] ?? null);
+        if ($tier === null) {
+            return;
+        }
+        $schema = \WHMCS\Database\Capsule::schema();
+        if (!$schema->hasColumn('tblproducts', 'configoption4')) {
+            return;
+        }
+        $updates = ['configoption4' => $tier];
+        if ($tier === VibePlanTier::FREE) {
+            $updates['paytype'] = 'free';
+            $updates['autosetup'] = 'order';
+        }
+        $columns = array_flip($schema->getColumnListing('tblproducts'));
+        \WHMCS\Database\Capsule::table('tblproducts')
+            ->where('id', $productId)
+            ->update(array_intersect_key($updates, $columns));
+    }
+
+    /** @param array<string,mixed> $plan */
+    private static function isFreeVibePlan(array $plan): bool
+    {
+        return self::isVibe($plan)
+            && VibePlanTier::normalize($plan['vibePlanTier'] ?? null) === VibePlanTier::FREE;
     }
 
     /**
@@ -516,7 +601,7 @@ final class PlanSync
         $pids = [];
         $ignored = [];
         foreach (self::plans() as $plan) {
-            $r = self::importPlan($plan, $comboId);
+            $r = self::importPlan($plan, $comboId, false);
             if (!$r['ok']) {
                 if ($r['mode'] === 'skipped') {
                     $skipped++;
@@ -535,6 +620,8 @@ final class PlanSync
                 $exists++;
             }
         }
+
+        self::reconcileVibeNativeUpgrades();
 
         return [
             'created' => $created,
@@ -611,6 +698,12 @@ final class PlanSync
             );
     }
 
+    /** Vibe is account-based and never receives infrastructure components. */
+    public static function usesConfigurableOptions(string $productType): bool
+    {
+        return strtolower(trim($productType)) !== 'vibe';
+    }
+
     /**
      * Vincula o grupo de Configurable Options "BladeCP" (componentes/
      * combos) a todos os produtos BladeCP ainda sem vínculo. Requer que
@@ -636,6 +729,10 @@ final class PlanSync
                 ->get(['id', 'configoption1', 'configoption2']);
             foreach ($rows as $r) {
                 $pid = (int) $r->id;
+                $type = (string) ($r->configoption1 ?? '');
+                if (!self::usesConfigurableOptions($type)) {
+                    continue;
+                }
                 if ($pid > 0 && !isset($already[$pid])) {
                     ConfigurableOptions::linkProduct($gid, $pid);
                     $n++;
@@ -681,6 +778,10 @@ final class PlanSync
                     $pid,
                     (string) ($r->configoption1 ?? '')
                 );
+                if (strtolower(trim((string) ($r->configoption1 ?? ''))) === 'vibe') {
+                    $n++;
+                    continue;
+                }
                 $planId = trim((string) ($r->configoption2 ?? ''));
                 if ($planId !== '') {
                     self::ensureLocationOptions($planId, $pid);

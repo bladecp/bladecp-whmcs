@@ -5,14 +5,12 @@ official BladeCP module for WHMCS.
 
 ## How public contributions are handled
 
-The private Bitbucket repository is the primary development source. GitHub
-issues and pull requests are reviewed publicly, but an approved public change
-is first imported into the private source and passes its normal validation
-there. A later curated export returns the approved change to this repository.
+GitHub issues and pull requests are reviewed publicly. An approved change
+passes the complete project validation and release review before it appears in
+a published package.
 
 This means a merged pull request may not appear in a public release
-immediately. It also means public history stays independent from private
-development history. After the first public release, public commits are added
+immediately. After the first public release, public commits are added
 normally and are never rewritten or force-pushed.
 
 Read [repository governance](docs/repository-governance.md) for the complete
@@ -54,8 +52,8 @@ Changes that affect WHMCS behavior should also be exercised in a non-production
 WHMCS installation. Describe the version, theme and scenarios you tested in the
 pull request. Maintainers run the complete automated, integration, security and
 release gates before accepting or publishing a release. Public continuous
-integration also checks the curated repository tree. A green public check does
-not replace the private artifact-only validation performed before a release.
+integration also checks the reviewed repository tree. A green public check does
+not replace the final artifact validation performed before a release.
 
 ## Pull requests
 
@@ -67,8 +65,7 @@ not replace the private artifact-only validation performed before a release.
 5. Be ready to address review feedback before merge.
 
 Please write commit messages and pull-request descriptions clearly enough that
-reviewers can understand the intended behavior without access to private
-systems.
+reviewers can understand the intended behavior from the public context.
 
 ## Security reports
 

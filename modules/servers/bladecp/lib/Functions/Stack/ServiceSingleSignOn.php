@@ -8,6 +8,7 @@ use WHMCS\Module\Server\Bladecp\Api\Client;
 use WHMCS\Module\Server\Bladecp\Helpers\Logger;
 use WHMCS\Module\Server\Bladecp\Helpers\ParamsMapper;
 use WHMCS\Module\Server\Bladecp\Helpers\ServiceProperties;
+use WHMCS\Module\Server\Bladecp\Helpers\ClientText;
 
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
@@ -20,7 +21,7 @@ final class ServiceSingleSignOn
     {
         $uuid = ServiceProperties::provisionUuid($params);
         if ($uuid === null) {
-            return ['success' => false, 'errorMsg' => 'Provision UUID ausente.'];
+            return ['success' => false, 'errorMsg' => ClientText::get('sso_provision_missing', [], null, $params)];
         }
         try {
             $client = Client::fromParams($params);
@@ -33,7 +34,7 @@ final class ServiceSingleSignOn
             if (!ParamsMapper::isAbsoluteHttpsUrl($url)) {
                 return [
                     'success' => false,
-                    'errorMsg' => 'A API não retornou um link HTTPS válido para acesso ao painel.',
+                    'errorMsg' => ClientText::get('sso_panel_link_invalid', [], null, $params),
                 ];
             }
             return [

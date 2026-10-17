@@ -40,6 +40,7 @@ final class Logger
             [
                 'serveraccesshash', 'access_hash', 'Authorization', 'api_key',
                 'token', 'secret', 'webhook_secret', 'new_password', 'password',
+                'assertion',
             ]
         );
     }
@@ -47,6 +48,13 @@ final class Logger
     /** Redação reutilizável para mensagens que precisam chegar à UI. */
     public static function redact(string $value): string
     {
+        $decoded = json_decode($value, true);
+        if (is_array($decoded)) {
+            return json_encode(self::scrub($decoded), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: self::REDACT;
+        }
+        $value = preg_replace('/-----BEGIN (?:RSA |EC |ENCRYPTED )?PRIVATE KEY-----.*?-----END (?:RSA |EC |ENCRYPTED )?PRIVATE KEY-----/s', self::REDACT, $value) ?? '';
+        $value = preg_replace('/([?&](?:code|state|ticket|codeVerifier|returnState|assertion)=)[^&#\s]*/i', '$1' . self::REDACT, $value) ?? '';
+        $value = preg_replace('~(/provision-link/)[^/?#\s"<>]+~i', '$1' . self::REDACT, $value) ?? '';
         $value = preg_replace(
             '/\b(?:whsec_|(?:bcp|vh)_(?:live|sand)_)[A-Za-z0-9._-]+/i',
             self::REDACT,
@@ -80,7 +88,9 @@ final class Logger
                 $key = is_string($k) ? strtolower($k) : $k;
                 $sensitive = is_string($key) && (
                     in_array($key, ['new_password', 'password', 'owner'], true)
+                    || in_array($key, ['code', 'state', 'ticket', 'grant', 'codeverifier', 'returnstate', 'sessionfingerprint', 'privatekey', 'encryptedprivatekey'], true)
                     || str_contains($key, 'secret')
+                    || str_contains($key, 'assertion')
                     || str_contains($key, 'token')
                     || str_contains($key, 'authorization')
                     || str_contains($key, 'accesshash')

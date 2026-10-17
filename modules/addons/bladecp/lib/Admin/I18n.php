@@ -68,7 +68,27 @@ final class I18n
      */
     public static function t(string $key, array $replace = []): string
     {
-        $value = self::$catalogue[$key] ?? self::englishCatalogue()[$key] ?? $key;
+        return self::format(self::$catalogue[$key] ?? self::englishCatalogue()[$key] ?? $key, $replace);
+    }
+
+    /**
+     * A named key in the installation default language. WHMCS calls the addon
+     * activation, deactivation and configuration callbacks without the
+     * administrator language, so those messages follow the system language.
+     *
+     * @param array<string,scalar|null> $replace
+     */
+    public static function system(string $key, array $replace = []): string
+    {
+        $language = $GLOBALS['CONFIG']['Language'] ?? self::DEFAULT_LOCALE;
+        $catalogue = self::loadCatalogue(self::normaliseLocale(is_string($language) ? $language : self::DEFAULT_LOCALE));
+
+        return self::format($catalogue[$key] ?? self::englishCatalogue()[$key] ?? $key, $replace);
+    }
+
+    /** @param array<string,scalar|null> $replace */
+    private static function format(string $value, array $replace): string
+    {
         if ($replace === []) {
             return $value;
         }

@@ -39,19 +39,28 @@ final class Catalog
         return $slugs;
     }
 
-    /** @return array<int,array{slug:string,name:string,category:string,featured:bool}>|null */
-    public static function catalog(Client $client): ?array
+    /**
+     * `$fresh` skips the local cache (admin screens that decide what goes on
+     * sale) and refreshes both caches with the answer.
+     *
+     * @return array<int,array{slug:string,name:string,category:string,featured:bool}>|null
+     */
+    public static function catalog(Client $client, bool $fresh = false): ?array
     {
-        $cached = self::readCacheFull($client);
-        if ($cached !== null) {
-            return $cached;
+        if (!$fresh) {
+            $cached = self::readCacheFull($client);
+            if ($cached !== null) {
+                return $cached;
+            }
         }
         try {
-            $rows = self::parseCatalog($client->get('/components/catalog'));
+            $response = $client->get('/components/catalog');
         } catch (\Throwable) {
             return null;
         }
+        $rows = self::parseCatalog($response);
         self::writeCacheFull($client, $rows);
+        self::writeCache($client, self::parse($response));
         return $rows;
     }
 

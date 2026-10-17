@@ -18,15 +18,22 @@ final class Client
     private const TIMEOUT = 30;
     /** Nunca deixe uma conexão sem resposta consumir todo o cron do WHMCS. */
     private const CONNECT_TIMEOUT = 8;
+    /** Lightweight optional UI data must not hold a WHMCS client page open. */
+    private const PARTNER_BRANDING_TIMEOUT = 3;
     /** Respostas que param de progredir são encerradas antes do timeout total. */
     private const LOW_SPEED_LIMIT = 1024;
     private const LOW_SPEED_TIME = 15;
     /** Margem pequena para drenar handles multi sem estender indefinidamente. */
     private const MULTI_DEADLINE_SECONDS = self::TIMEOUT + 5;
     private const MAX_PARALLEL_REQUESTS = 8;
-    private const VERSION = '0.9.0-rc.4';
+    private const VERSION = '0.9.0-rc.8';
 
     private Endpoints $endpoints;
+    private array $lastRequestDiagnostics = [];
+
+    /** Safe transport metadata only; never includes request or response bodies. */
+    public function lastRequestDiagnostics(): array { return $this->lastRequestDiagnostics; }
+
 
     public function __construct(
         private string $apiKey,
@@ -48,7 +55,7 @@ final class Client
     /** Cria o cliente a partir da configuração de servidor do WHMCS. */
     public static function fromParams(array $params): self
     {
-        $apiKey = trim((string) ($params['serveraccesshash'] ?? ''));
+        $apiKey = self::apiKeyFromParams($params);
 
         $host = trim((string) ($params['serverhostname'] ?? ''));
         if ($host === '') {
@@ -59,7 +66,11 @@ final class Client
         } else {
             $secure = !empty($params['serversecure']);
             $scheme = $secure ? 'https' : 'http';
-            $port = trim((string) ($params['serverport'] ?? ''));
+            $rawPort = trim((string) ($params['serverport'] ?? ''));
+            $validatedPort = filter_var($rawPort, FILTER_VALIDATE_INT, [
+                'options' => ['min_range' => 1, 'max_range' => 65535],
+            ]);
+            $port = $validatedPort === false ? '' : (string) $validatedPort;
             $defaultPort = $secure ? '443' : '80';
             $authority = $host
                 . ($port !== '' && $port !== $defaultPort ? ':' . $port : '');
@@ -74,6 +85,31 @@ final class Client
         }
 
         return new self($apiKey, $baseUrl, $slug);
+    }
+
+    /**
+     * O WHMCS pode entregar o Access Hash do Server record em texto puro ou
+     * no formato criptografado persistido em tblservers. Normalize os dois
+     * formatos na fronteira canônica usada por todo provisionamento.
+     */
+    private static function apiKeyFromParams(array $params): string
+    {
+        $raw = trim((string) ($params['serveraccesshash'] ?? ''));
+        if ($raw === '' || preg_match('/^(bcp|vh)_/', $raw) === 1) {
+            return $raw;
+        }
+        if (!function_exists('localAPI')) {
+            return '';
+        }
+
+        try {
+            $decrypted = localAPI('DecryptPassword', ['password2' => $raw]);
+            $apiKey = trim((string) ($decrypted['password'] ?? ''));
+
+            return preg_match('/^(bcp|vh)_/', $apiKey) === 1 ? $apiKey : '';
+        } catch (\Throwable) {
+            return '';
+        }
     }
 
     /** Retorna uma mensagem quando a credencial de servidor não foi configurada. */
@@ -106,11 +142,191 @@ final class Client
         return $this->request('GET', $path, null, $headers);
     }
 
+    /**
+     * Minimal public partner branding. The API derives the partner from this
+     * Server record's Access Hash, never from browser or module input.
+     *
+     * @return array{publicName:string,logoUrl:string,logoDarkUrl:string}
+     */
+    public function partnerBrandingAssets(): array
+    {
+        return PartnerBranding::normalize($this->getWithTimeout(
+            Endpoints::PARTNER_BRANDING_ASSETS,
+            self::PARTNER_BRANDING_TIMEOUT
+        ));
+    }
+
+    /** @return array<string,mixed> */
+    private function getWithTimeout(string $path, int $timeoutSeconds): array
+    {
+        return self::dataFromEnvelope(
+            $this->request('GET', $path, null, [], $timeoutSeconds)
+        );
+    }
+
     public function post(string $path, array $body, array $headers = []): array
     {
         return self::dataFromEnvelope(
             $this->request('POST', $path, $body, $headers)
         );
+    }
+
+    /**
+     * Starts an administrative Vibe support handoff. The Server Access Hash
+     * authenticates only this WHMCS installation; the returned authorize URL
+     * still requires the operator's own BladeCP session.
+     *
+     * @return array{authorizeUrl:string,expiresAt?:string}
+     */
+    public function issueVibeSupportIntent(
+        int $externalServiceId,
+        string $accountId,
+        int $bindingVersion,
+        ?string $launchToken = null
+    ): array {
+        if ($externalServiceId <= 0 || $bindingVersion <= 0) {
+            throw new \InvalidArgumentException('Contexto de suporte Vibe inválido.');
+        }
+        $accountId = trim($accountId);
+        if ($accountId === '' || strlen($accountId) > 512 || preg_match('/[\x00-\x1F\x7F]/', $accountId) === 1) {
+            throw new \InvalidArgumentException('Conta Vibe inválida para suporte.');
+        }
+        if ($launchToken !== null && preg_match('/^[A-Za-z0-9_-]{43}$/D', $launchToken) !== 1) {
+            throw new \InvalidArgumentException('Solicitação de criação Vibe inválida.');
+        }
+        $payload = [
+            'externalServiceId' => (string) $externalServiceId,
+            'accountId' => $accountId,
+            'bindingVersion' => $bindingVersion,
+        ];
+        if ($launchToken !== null) {
+            $payload['launchToken'] = $launchToken;
+        }
+        $response = $this->post(
+            Endpoints::VIBE_SUPPORT_INTENTS,
+            $payload,
+            ['Idempotency-Key' => 'whmcs-vibe-support-' . $externalServiceId . '-' . bin2hex(random_bytes(12))]
+        );
+        $authorizeUrl = $response['authorizeUrl'] ?? null;
+        if (!is_string($authorizeUrl) || trim($authorizeUrl) === '') {
+            throw new ApiException('BladeCP: não foi possível preparar o acesso de suporte agora.');
+        }
+        return [
+            'authorizeUrl' => trim($authorizeUrl),
+            ...isset($response['expiresAt']) && is_string($response['expiresAt']) ? ['expiresAt' => $response['expiresAt']] : [],
+        ];
+    }
+
+    /** @return array<string,mixed> */
+    public function issueVibeIdentityLinkIntent(
+        string $externalUserSubject,
+        string $externalClientAccountId,
+        string $externalServiceId,
+        string $partnerPlanUuid,
+        string $partnerAuthAt,
+        string $codeChallenge,
+        string $stateHash,
+        string $idempotencyKey
+    ): array {
+        return VibeIdentityLink::normalizeIssueResponse($this->post(
+            Endpoints::VIBE_IDENTITY_LINK_INTENTS,
+            VibeIdentityLink::issuePayload($externalUserSubject, $externalClientAccountId, $externalServiceId, $partnerPlanUuid, $partnerAuthAt, $codeChallenge, $stateHash),
+            ['Idempotency-Key' => self::requireIdempotencyKey($idempotencyKey)]
+        ));
+    }
+
+    /** @return array<string,mixed> */
+    public function exchangeVibeIdentityLinkIntent(
+        string $intentId,
+        string $authorizationCode,
+        string $codeVerifier,
+        string $idempotencyKey
+    ): array {
+        $intentId = trim($intentId);
+        if ($intentId === '' || strlen($intentId) > 512 || preg_match('/[\x00-\x1F\x7F]/', $intentId) === 1) {
+            throw new \InvalidArgumentException('intentId inválido para vínculo de identidade.');
+        }
+        return VibeIdentityLink::normalizeExchangeResponse($this->post(
+            Endpoints::vibeIdentityLinkIntentExchange($intentId),
+            VibeIdentityLink::exchangePayload($authorizationCode, $codeVerifier),
+            ['Idempotency-Key' => self::requireIdempotencyKey($idempotencyKey)]
+        ));
+    }
+
+    /**
+     * Redeems an opaque, one-time commercial handoff after the addon has
+     * resolved the WHMCS owner and Client Account locally. The API attests the
+     * Vibe service from the ticket, which the addon revalidates afterwards.
+     * No browser-controlled URL or destination is accepted here.
+     *
+     * @return array<string,mixed>
+     */
+    public function redeemVibeCommercialActionTicket(
+        string $ticket,
+        string $externalUserSubject,
+        string $externalClientAccountId
+    ): array {
+        if (preg_match('/^[A-Za-z0-9_-]{43}$/D', $ticket) !== 1) {
+            throw new \InvalidArgumentException('ticket comercial inválido.');
+        }
+        foreach ([$externalUserSubject, $externalClientAccountId] as $value) {
+            if ($value === '' || strlen($value) > 512 || preg_match('/[\x00-\x1F\x7F]/', $value) === 1) {
+                throw new \InvalidArgumentException('contexto comercial inválido.');
+            }
+        }
+
+        return $this->post(Endpoints::VIBE_COMMERCIAL_ACTION_TICKETS_REDEEM, [
+            'ticket' => $ticket,
+            'externalUserSubject' => $externalUserSubject,
+            'externalClientAccountId' => $externalClientAccountId,
+        ]);
+    }
+
+    /** @return array{recoveryId:string,externalServiceId:int,accountId:string,bindingVersion:int,action:string} */
+    public function redeemVibeContextRecoveryTicket(
+        string $ticket,
+        string $externalUserSubject,
+        string $externalClientAccountId
+    ): array {
+        return VibeContextRecovery::normalizeRedeemResponse($this->post(
+            Endpoints::VIBE_CONTEXT_RECOVERY_REDEEM,
+            VibeContextRecovery::redeemPayload($ticket, $externalUserSubject, $externalClientAccountId)
+        ));
+    }
+
+    /** @return array{callbackUrl:string,resultCode:string,expiresAt:string} */
+    public function confirmVibeContextRecovery(
+        string $recoveryId,
+        string $externalUserSubject,
+        string $externalClientAccountId
+    ): array {
+        return VibeContextRecovery::normalizeConfirmResponse($this->post(
+            Endpoints::VIBE_CONTEXT_RECOVERY_CONFIRM,
+            VibeContextRecovery::confirmPayload($recoveryId, $externalUserSubject, $externalClientAccountId)
+        ));
+    }
+
+    /**
+     * Publishes only the partner's local WHMCS Vibe product snapshot. This is
+     * server-to-server and authenticated by the Server Access Hash; no browser
+     * identifier or redirect is involved.
+     *
+     * @param array<string,mixed> $snapshot
+     * @return array<string,mixed>
+     */
+    public function syncVibeCommercialCatalog(array $snapshot): array
+    {
+        $revision = trim((string) ($snapshot['catalogRevision'] ?? ''));
+        if (preg_match('/^[a-f0-9]{64}$/D', $revision) !== 1) {
+            throw new \InvalidArgumentException('revisão comercial inválida.');
+        }
+        return $this->post(Endpoints::VIBE_COMMERCIAL_CATALOG_SYNC, $snapshot, [
+            'Idempotency-Key' => self::requireIdempotencyKey(
+                'whmcs-vibe-commercial-catalog-'
+                . $revision
+                . '-' . bin2hex(random_bytes(12))
+            ),
+        ]);
     }
 
     public function patch(string $path, array $body, array $headers = []): array
@@ -130,34 +346,58 @@ final class Client
         );
     }
 
+    private static function newCorrelationId(): ?string
+    {
+        try {
+            $bytes = random_bytes(16);
+            $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+            $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+            $hex = bin2hex($bytes);
+            return substr($hex, 0, 8) . '-' . substr($hex, 8, 4) . '-' . substr($hex, 12, 4)
+                . '-' . substr($hex, 16, 4) . '-' . substr($hex, 20);
+        } catch (\Throwable) { return null; }
+    }
+
     private function request(
         string $method,
         string $path,
         ?array $body,
-        array $extraHeaders
+        array $extraHeaders,
+        ?int $timeoutSeconds = null
     ): array {
+        $this->lastRequestDiagnostics = [];
         // Sem credencial configurada, não há uma solicitação a executar.
         $configError = $this->configError();
         if ($configError !== null) {
             throw new AuthException($configError, 401);
         }
 
+        $correlationId = self::newCorrelationId();
         $headers = array_merge([
             'Authorization' => 'Bearer ' . $this->apiKey,
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
             'X-Request-Source' => 'whmcs-module/' . self::VERSION,
-        ], $extraHeaders);
+        ], $correlationId === null ? [] : ['X-Correlation-Id' => $correlationId], $extraHeaders);
         if ($this->attributionSource !== null && $this->attributionSource !== '') {
             $headers['X-Attribution-Source'] = 'whmcs:' . $this->attributionSource;
         }
 
+        $timeout = $timeoutSeconds === null
+            ? self::TIMEOUT : max(1, min(self::TIMEOUT, $timeoutSeconds));
+        $connectTimeout = min(self::CONNECT_TIMEOUT, $timeout);
         $ch = curl_init($this->endpoints->url($path));
         curl_setopt_array($ch, [
+            CURLOPT_HEADERFUNCTION => static function ($handle, string $line) use (&$correlationId): int {
+                if (preg_match('/^X-Correlation-Id:\s*([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\s*$/i', trim($line), $match)) {
+                    $correlationId = strtolower($match[1]);
+                }
+                return strlen($line);
+            },
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => self::TIMEOUT,
-            CURLOPT_CONNECTTIMEOUT => self::CONNECT_TIMEOUT,
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_CONNECTTIMEOUT => $connectTimeout,
             CURLOPT_LOW_SPEED_LIMIT => self::LOW_SPEED_LIMIT,
             CURLOPT_LOW_SPEED_TIME => self::LOW_SPEED_TIME,
             CURLOPT_NOSIGNAL => true,
@@ -176,6 +416,11 @@ final class Client
         }
 
         $raw = curl_exec($ch);
+        $this->lastRequestDiagnostics = [
+            'http_status' => (int) curl_getinfo($ch, CURLINFO_HTTP_CODE),
+            'curl_errno' => curl_errno($ch),
+            'http_duration_ms' => (int) round(curl_getinfo($ch, CURLINFO_TOTAL_TIME) * 1000),
+        ] + ($correlationId === null ? [] : ['correlation_id' => $correlationId]);
         if ($raw === false) {
             curl_close($ch);
             // cURL pode incluir dados do ambiente na mensagem. A UI e os
@@ -214,6 +459,15 @@ final class Client
         return is_array($data) ? $data : $decoded;
     }
 
+    private static function requireIdempotencyKey(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '' || strlen($value) > 255 || preg_match('/[\x00-\x1F\x7F]/', $value) === 1) {
+            throw new \InvalidArgumentException('Idempotency-Key inválida para vínculo de identidade.');
+        }
+        return $value;
+    }
+
     /** Converte erros da API em mensagens seguras para a interface. */
     private static function safeErrorMessage(int $status, array $body): string
     {
@@ -232,7 +486,36 @@ final class Client
             'automation_not_ready' => 'BladeCP: a automação deste plano ainda não está pronta para venda pelo WHMCS.',
             'manual_delivery_only' => 'BladeCP: este plano está disponível somente para entrega manual e não pode ser vendido pelo WHMCS.',
             'channel_not_supported' => 'BladeCP: este plano não está habilitado para provisionamento pelo WHMCS.',
+            'plan_not_available' => 'BladeCP: este plano Vibe não está disponível para esta conta de partner.',
+            'mode_dependency_not_ready' => 'BladeCP: a configuração de IA deste plano Vibe ainda não está pronta.',
+            'email_verification_required' => 'BladeCP: confirme o e-mail da sua conta antes de ativar o BladeCP Vibe Free.',
+            'free_activation_context_invalid' => 'BladeCP: não foi possível confirmar a elegibilidade deste serviço Free. Confirme o e-mail e tente novamente.',
+            'free_grant_already_used' => 'BladeCP: esta conta já utilizou a concessão Free disponível neste contexto comercial.',
+            'free_grant_not_eligible' => 'BladeCP: este serviço Free não está elegível para uma nova ativação.',
+            'downgrade_not_available' => 'BladeCP: a conversão do Vibe Pro para Free não está disponível.',
+            'plan_transition_not_allowed' => 'BladeCP: esta alteração de plano não está disponível para a conta Vibe.',
+            'external_service_conflict' => 'BladeCP: este serviço WHMCS já está vinculado a outra conta Vibe. Revise a correlação antes de continuar.',
             'provisioning_unavailable' => 'BladeCP: a confirmação de disponibilidade está temporariamente indisponível. Tente novamente em alguns minutos.',
+            'identity_link_invalid_request' => 'BladeCP: não foi possível preparar este acesso. Tente novamente.',
+            'identity_link_required' => 'BladeCP: o proprietário precisa abrir o Vibe pela área de cliente para confirmar o vínculo deste serviço. Não crie outro pedido.',
+            'customer_identity_provider_unavailable' => 'BladeCP: a configuração de identidade da integração precisa ser revisada pelo administrador.',
+            'customer_identity_service_unavailable' => 'BladeCP: a confirmação de identidade está temporariamente indisponível. O serviço ainda não foi confirmado.',
+            'customer_identity_invalid' => 'BladeCP: os dados de identidade do cliente foram rejeitados. Revise o cadastro antes de tentar novamente.',
+            'customer_identity_conflict' => 'BladeCP: o vínculo de identidade do cliente conflita com o cadastro existente. Revise o vínculo sem criar outra conta ou pedido.',
+            'identity_link_not_allowed' => 'BladeCP: o proprietário desta conta precisa concluir a ativação.',
+            'identity_link_owner_required' => 'BladeCP: o proprietário desta conta precisa concluir a ativação.',
+            'identity_link_intent_not_found' => 'BladeCP: esta confirmação não está mais disponível. Tente novamente.',
+            'identity_link_expired' => 'BladeCP: esta confirmação não está mais disponível. Tente novamente.',
+            'identity_binding_conflict' => 'BladeCP: precisamos revisar este acesso antes de continuar.',
+            'commercial_context_conflict' => 'BladeCP: precisamos revisar este acesso antes de continuar.',
+            'service_account_conflict' => 'BladeCP: precisamos revisar este acesso antes de continuar.',
+            'plan_product_conflict' => 'BladeCP: precisamos revisar este acesso antes de continuar.',
+            'legacy_reconciliation_required' => 'BladeCP: precisamos revisar este acesso antes de continuar.',
+            'secure_reauthentication_required' => 'BladeCP: confirme sua conta BladeCP para continuar.',
+            'identity_link_in_progress' => 'BladeCP: não foi possível concluir agora. Tente novamente.',
+            'identity_link_proof_invalid' => 'BladeCP: não foi possível concluir agora. Tente novamente.',
+            'identity_link_temporarily_unavailable' => 'BladeCP: não foi possível concluir agora. Tente novamente.',
+            'global_identity_unavailable' => 'BladeCP: não foi possível concluir agora. Tente novamente.',
         ];
         if (isset($byCode[$code])) {
             return $byCode[$code];

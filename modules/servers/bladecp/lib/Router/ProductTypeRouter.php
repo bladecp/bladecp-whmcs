@@ -16,9 +16,8 @@ if (!defined('WHMCS')) {
  * type) pra classe certa em Functions\{Stack,Edge,Dedicated}\. Funções
  * Shared (TestConnection/ListAccounts/UsageUpdate) não bifurcam.
  *
- * Stack Container, Edge Cloud e Dedicated possuem lifecycle explícito. Vibe é
- * reconhecido para compatibilidade de configurações, mas seus serviços não
- * são provisionados por este módulo.
+ * Every product type has an explicit lifecycle namespace. Vibe uses a
+ * dedicated account lifecycle and is never routed to infrastructure handlers.
  */
 final class ProductTypeRouter
 {

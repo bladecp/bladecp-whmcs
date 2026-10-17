@@ -52,6 +52,15 @@ final class WebhookReceiver
         'provision.activated' => 'Active',
     ];
 
+    /** Eventos de lifecycle da conta Vibe. O estado canônico vem no payload. */
+    public const VIBE_ACCOUNT_EVENTS = [
+        'vibe.account.activated',
+        'vibe.account.plan_changed',
+        'vibe.account.suspended',
+        'vibe.account.reactivated',
+        'vibe.account.terminated',
+    ];
+
     /** Status de provisão (em `status.changed`) → status WHMCS. */
     public const PROVISION_STATUS_MAP = [
         'pending' => 'Pending',
@@ -86,16 +95,20 @@ final class WebhookReceiver
             $s = strtolower(trim($provisionStatus));
             return self::PROVISION_STATUS_MAP[$s] ?? null;
         }
+        if (in_array($event, self::VIBE_ACCOUNT_EVENTS, true)) {
+            $s = strtolower(trim($provisionStatus));
+            return self::PROVISION_STATUS_MAP[$s] ?? null;
+        }
         return self::STATUS_MAP[$event] ?? null;
     }
 
     /**
      * Pura: payload (string JSON ou array) → evento normalizado, ou
-     * `null` se faltar `event`/`provisionUuid`. Tolera o envelope real
+     * `null` se faltar `event`/recurso. Tolera o envelope real
      * `{id,type,created,data}` e nomes camelCase/snake_case (o tipo
      * chega em `type`; o uuid em `data.provisionUuid`).
      *
-     * @return array{event:string,eventUuid:string,provisionUuid:string,status:string,resourceVersion:?string,whmcsStatus:?string}|null
+     * @return array{event:string,eventUuid:string,provisionUuid:string,accountId:?string,partnerUuid:?string,externalServiceId:?string,endpointUuid:?string,resourceId:string,status:string,resourceVersion:?string,whmcsStatus:?string}|null
      */
     public static function parseEvent(mixed $json): ?array
     {
@@ -107,7 +120,7 @@ final class WebhookReceiver
      * Validação tipada do envelope. Erros deste estágio são permanentes: o
      * evento ainda não entrou no ledger e nenhuma mutação foi realizada.
      *
-     * @return array{event:array{event:string,eventUuid:string,provisionUuid:string,status:string,resourceVersion:?string,whmcsStatus:?string}|null,error:string}
+     * @return array{event:array{event:string,eventUuid:string,provisionUuid:string,accountId:?string,partnerUuid:?string,externalServiceId:?string,endpointUuid:?string,resourceId:string,status:string,resourceVersion:?string,whmcsStatus:?string}|null,error:string}
      */
     public static function parseEventResult(mixed $json): array
     {
@@ -127,7 +140,7 @@ final class WebhookReceiver
             ?? $inner['event']
             ?? ''
         ));
-        $eventUuid = trim((string) ($json['id'] ?? ''));
+        $eventUuid = trim((string) ($json['id'] ?? $json['eventId'] ?? ''));
         $uuid = trim((string) (
             $inner['provisionUuid']
             ?? $inner['provision_uuid']
@@ -151,8 +164,26 @@ final class WebhookReceiver
         if (!self::isCanonicalUuid($eventUuid)) {
             return ['event' => null, 'error' => 'invalid_event_id'];
         }
-        if (!self::isCanonicalUuid($uuid)) {
+        $isVibeAccountEvent = self::isVibeAccountEvent($event);
+        $accountId = trim((string) (
+            $inner['accountId']
+            ?? $inner['account_id']
+            ?? $json['accountId']
+            ?? $json['account_id']
+            ?? ''
+        ));
+        $partnerUuid = trim((string) ($inner['partnerUuid'] ?? $inner['partner_uuid'] ?? ''));
+        $externalServiceId = trim((string) ($inner['externalServiceId'] ?? $inner['external_service_id'] ?? ''));
+        $endpointUuid = trim((string) ($inner['endpointUuid'] ?? $inner['endpoint_uuid'] ?? ''));
+        if (!$isVibeAccountEvent && !self::isCanonicalUuid($uuid)) {
             return ['event' => null, 'error' => 'invalid_provision_uuid'];
+        }
+        if ($isVibeAccountEvent && !self::isOpaqueResourceId($accountId)) {
+            return ['event' => null, 'error' => 'invalid_account_id'];
+        }
+        if ($isVibeAccountEvent && (!self::isOpaqueResourceId($partnerUuid)
+            || $externalServiceId === '' || !self::isOpaqueResourceId($endpointUuid))) {
+            return ['event' => null, 'error' => 'invalid_vibe_event_context'];
         }
         $version = self::resourceVersion($resourceVersion);
         if ($resourceVersion !== null && $version === null) {
@@ -163,6 +194,11 @@ final class WebhookReceiver
                 'event' => $event,
                 'eventUuid' => $eventUuid,
                 'provisionUuid' => $uuid,
+                'accountId' => $isVibeAccountEvent ? $accountId : null,
+                'partnerUuid' => $isVibeAccountEvent ? $partnerUuid : null,
+                'externalServiceId' => $isVibeAccountEvent ? $externalServiceId : null,
+                'endpointUuid' => $isVibeAccountEvent ? $endpointUuid : null,
+                'resourceId' => $isVibeAccountEvent ? $accountId : $uuid,
                 'status' => $status,
                 'resourceVersion' => $version,
                 'whmcsStatus' => self::mapEventToStatus($event, $status),
@@ -177,6 +213,17 @@ final class WebhookReceiver
             '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/',
             $value
         ) === 1;
+    }
+
+    private static function isVibeAccountEvent(string $event): bool
+    {
+        return in_array(strtolower(trim($event)), self::VIBE_ACCOUNT_EVENTS, true);
+    }
+
+    /** IDs públicos de conta são opacos, mas precisam caber no ledger WHMCS. */
+    private static function isOpaqueResourceId(string $value): bool
+    {
+        return $value !== '' && strlen($value) <= 191;
     }
 
     private static function resourceVersion(mixed $value): ?string
@@ -280,16 +327,22 @@ final class WebhookReceiver
 
     /**
      * Reflete o status do evento no serviço WHMCS correspondente
-     * (DIRETO em `tblhosting`, sem re-chamar o módulo). Resolve o
-     * serviço pelo custom field "BladeCP Provision UUID". Fail-soft:
+     * (DIRETO em `tblhosting`, sem re-chamar o módulo). Eventos de
+     * infraestrutura resolvem "BladeCP Provision UUID"; eventos Vibe usam
+     * exclusivamente "BladeCP Vibe Account ID" em produtos do tipo vibe.
+     * Fail-soft:
      * sem Capsule / sem serviço / status não-acionável → no-op.
      *
-     * @param array{provisionUuid?:string,whmcsStatus?:?string} $event
+     * @param array{provisionUuid?:string,accountId?:?string,partnerUuid?:?string,externalServiceId?:?string,whmcsStatus?:?string} $event
      * @return array{ok:bool,reason?:string,serviceId?:int,status?:string}
      */
     public static function applyToService(array $event, int $serverId = 0): array
     {
-        $uuid = trim((string) ($event['provisionUuid'] ?? ''));
+        $accountId = trim((string) ($event['accountId'] ?? ''));
+        $isVibeAccount = $accountId !== '';
+        $uuid = $isVibeAccount
+            ? $accountId
+            : trim((string) ($event['provisionUuid'] ?? ''));
         $status = $event['whmcsStatus'] ?? null;
         if ($uuid === '') {
             return ['ok' => false, 'reason' => 'no-uuid'];
@@ -301,23 +354,29 @@ final class WebhookReceiver
             return ['ok' => false, 'reason' => 'no-db'];
         }
         try {
-            // Serviço cujo custom field "BladeCP Provision UUID" == uuid.
-            $row = \WHMCS\Database\Capsule::table('tblcustomfieldsvalues as v')
+            $query = \WHMCS\Database\Capsule::table('tblcustomfieldsvalues as v')
                 ->join('tblcustomfields as f', 'f.id', '=', 'v.fieldid')
                 ->join('tblhosting as h', 'h.id', '=', 'v.relid')
                 ->join('tblproducts as p', 'p.id', '=', 'h.packageid')
-                ->where('f.fieldname', 'BladeCP Provision UUID')
                 ->where('f.type', 'product')
                 ->where('v.value', $uuid)
-                ->where('p.servertype', 'bladecp')
-                ->select(['v.relid', 'h.server'])
-                ->first();
+                ->where('p.servertype', 'bladecp');
+            if ($isVibeAccount) {
+                $query->where('f.fieldname', 'BladeCP Vibe Account ID')
+                    ->where('p.configoption1', 'vibe');
+            } else {
+                $query->where('f.fieldname', 'BladeCP Provision UUID');
+            }
+            $row = $query->select(['v.relid', 'h.server'])->first();
             $serviceId = $row !== null ? (int) ($row->relid ?? 0) : 0;
             if ($serviceId <= 0) {
                 return ['ok' => false, 'reason' => 'service-not-found'];
             }
             if ($serverId > 0 && (int) ($row->server ?? 0) !== $serverId) {
                 return ['ok' => false, 'reason' => 'service-not-found'];
+            }
+            if ($isVibeAccount && !self::matchesVibeContext($event, $serviceId)) {
+                return ['ok' => false, 'reason' => 'vibe-context-mismatch'];
             }
             \WHMCS\Database\Capsule::table('tblhosting')
                 ->where('id', $serviceId)
@@ -329,6 +388,27 @@ final class WebhookReceiver
             ];
         } catch (\Throwable) {
             return ['ok' => false, 'reason' => 'storage-error'];
+        }
+    }
+
+    /** @param array<string,mixed> $event */
+    private static function matchesVibeContext(array $event, int $serviceId): bool
+    {
+        $partner = trim((string) ($event['partnerUuid'] ?? ''));
+        $external = trim((string) ($event['externalServiceId'] ?? ''));
+        if ($partner === '' || $external === '' || !hash_equals((string) $serviceId, $external)) {
+            return false;
+        }
+        try {
+            $stored = \WHMCS\Database\Capsule::table('tblcustomfieldsvalues as v')
+                ->join('tblcustomfields as f', 'f.id', '=', 'v.fieldid')
+                ->where('v.relid', $serviceId)
+                ->where('f.type', 'product')
+                ->where('f.fieldname', 'BladeCP Partner UUID')
+                ->value('v.value');
+            return is_string($stored) && hash_equals($stored, $partner);
+        } catch (\Throwable) {
+            return false;
         }
     }
 }

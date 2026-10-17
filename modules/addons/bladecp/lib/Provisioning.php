@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WHMCS\Module\Addon\Bladecp;
 
 use WHMCS\Module\Server\Bladecp\Helpers\AdminServerContext;
+use WHMCS\Module\Addon\Bladecp\Admin\I18n;
 
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
@@ -72,7 +73,7 @@ final class Provisioning
             $serverId = self::resolvedServerId();
             $serverGroupId = $serverId === null ? 0 : self::serverGroup($serverId);
             if ($serverId === null || $serverGroupId <= 0) {
-                return ['ok' => false, 'pid' => 0, 'mode' => '', 'error' => 'Selecione um servidor BladeCP exclusivo antes de criar o produto de teste.'];
+                return ['ok' => false, 'pid' => 0, 'mode' => '', 'error' => I18n::t('admin.setup.starter_server_required')];
             }
             $existing = self::findStarterProduct($serverId);
             if ($existing !== null) {

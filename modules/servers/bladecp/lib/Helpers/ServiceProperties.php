@@ -59,4 +59,13 @@ final class ServiceProperties
         $uuid = self::get($params, 'BladeCP Provision UUID');
         return is_string($uuid) && $uuid !== '' ? $uuid : null;
     }
+
+    /** Public Customer API identifier for a Vibe reseller account. */
+    public static function vibeAccountId(array $params): ?string
+    {
+        $accountId = self::get($params, 'BladeCP Vibe Account ID');
+        return is_string($accountId) && trim($accountId) !== ''
+            ? trim($accountId)
+            : null;
+    }
 }

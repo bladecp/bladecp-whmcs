@@ -75,7 +75,15 @@ final class OrderFormSkin
 
         add_hook('ClientAreaFooterOutput', 1, static function ($vars): string {
             try {
-                return self::clientFooterOutput();
+                return self::clientFooterOutput()
+                    . \WHMCS\Module\Server\Bladecp\Helpers\VibeSsoLoading::footerOutput()
+                    . \WHMCS\Module\Server\Bladecp\Helpers\VibeFreeResume::footerOutput(
+                        is_array($vars) ? $vars : []
+                    )
+                    . \WHMCS\Module\Server\Bladecp\Helpers\CommercialActionResume::footerOutput()
+                    . \WHMCS\Module\Server\Bladecp\Helpers\VibeContextRecoveryResume::footerOutput()
+                    . (class_exists(\WHMCS\Module\Server\Bladecp\Helpers\MigrationClaimResume::class)
+                        ? \WHMCS\Module\Server\Bladecp\Helpers\MigrationClaimResume::footerOutput() : '');
             } catch (\Throwable) {
                 return '';
             }

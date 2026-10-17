@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace WHMCS\Module\Addon\Bladecp;
 
 use WHMCS\Module\Server\Bladecp\Api\Client;
+use WHMCS\Module\Server\Bladecp\Api\Exceptions\AuthException;
 use WHMCS\Module\Server\Bladecp\Helpers\AdminServerContext;
+use WHMCS\Module\Server\Bladecp\Helpers\ServerConfig;
+use WHMCS\Module\Addon\Bladecp\Admin\I18n;
 
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
@@ -20,6 +23,9 @@ final class Setup
     public const HOST_SANDBOX = 'api.bladecp.cloud';
     public const HOST_PRODUCTION = 'api.bladecp.com';
 
+    /** @var array{state:string,ok:bool,who:?string,error:?string}|null */
+    private static ?array $currentConnectionHealth = null;
+
     /**
      * Detecta o ambiente pelo prefixo da chave. Puro/determinístico.
      *
@@ -33,8 +39,8 @@ final class Setup
         }
 
         return $m[1] === 'sand'
-            ? ['env' => 'sandbox', 'host' => self::HOST_SANDBOX, 'label' => 'Sandbox']
-            : ['env' => 'production', 'host' => self::HOST_PRODUCTION, 'label' => 'Produção'];
+            ? ['env' => 'sandbox', 'host' => self::HOST_SANDBOX, 'label' => I18n::t('setup.environment.sandbox')]
+            : ['env' => 'production', 'host' => self::HOST_PRODUCTION, 'label' => I18n::t('setup.environment.production')];
     }
 
     /**
@@ -98,12 +104,17 @@ final class Setup
      * Valida a chave contra a API (GET /me) no host derivado. Não grava
      * nada. Fail-soft.
      *
-     * @return array{ok:bool,who:?string,error:?string}
+     * @return array{state:string,ok:bool,who:?string,error:?string}
      */
     public static function validate(string $key, string $host): array
     {
         if (!class_exists(Client::class)) {
-            return ['ok' => false, 'who' => null, 'error' => 'Módulo de servidor indisponível.'];
+            return [
+                'state' => 'unavailable',
+                'ok' => false,
+                'who' => null,
+                'error' => I18n::t('admin.setup.server_module_unavailable'),
+            ];
         }
         try {
             $me = Client::fromParams([
@@ -113,10 +124,94 @@ final class Setup
                 'serverport' => '',
             ])->get('/me');
 
-            return ['ok' => true, 'who' => self::whoFrom($me), 'error' => null];
+            return [
+                'state' => 'valid',
+                'ok' => true,
+                'who' => self::whoFrom($me),
+                'error' => null,
+            ];
+        } catch (AuthException $e) {
+            return [
+                'state' => 'rejected',
+                'ok' => false,
+                'who' => null,
+                'error' => $e->getMessage(),
+            ];
         } catch (\Throwable $e) {
-            return ['ok' => false, 'who' => null, 'error' => $e->getMessage()];
+            return [
+                'state' => 'unavailable',
+                'ok' => false,
+                'who' => null,
+                'error' => $e->getMessage(),
+            ];
         }
+    }
+
+    /**
+     * Classifica a saúde da conexão sem confundir configuração persistida
+     * com autorização válida. O segundo argumento permite testar a regra sem
+     * rede; quando omitido, a API é consultada.
+     *
+     * @param array<string,mixed>|null $params
+     * @param array{state?:string,ok:bool,who:?string,error:?string}|null $validation
+     * @return array{state:string,ok:bool,who:?string,error:?string}
+     */
+    public static function connectionHealth(
+        ?array $params = null,
+        ?array $validation = null
+    ): array {
+        if ($params === null) {
+            return [
+                'state' => 'unconfigured',
+                'ok' => false,
+                'who' => null,
+                'error' => null,
+            ];
+        }
+
+        $key = trim((string) ($params['serveraccesshash'] ?? ''));
+        if ($key === '') {
+            return [
+                'state' => 'rejected',
+                'ok' => false,
+                'who' => null,
+                'error' => 'BladeCP: configure o Server Access Hash.',
+            ];
+        }
+
+        $host = trim((string) ($params['serverhostname'] ?? ''));
+        if ($host === '') {
+            $host = self::HOST_PRODUCTION;
+        }
+        $result = $validation ?? self::validate($key, $host);
+        $state = (string) ($result['state'] ?? ($result['ok'] ? 'valid' : 'unavailable'));
+        if (!in_array($state, ['valid', 'rejected', 'unavailable'], true)) {
+            $state = $result['ok'] ? 'valid' : 'unavailable';
+        }
+
+        return [
+            'state' => $state,
+            'ok' => $state === 'valid' && (bool) $result['ok'],
+            'who' => is_string($result['who'] ?? null) ? $result['who'] : null,
+            'error' => is_string($result['error'] ?? null) ? $result['error'] : null,
+        ];
+    }
+
+    /**
+     * Saúde da conexão do servidor administrativo atual, consultada no máximo
+     * uma vez durante a mesma requisição PHP.
+     *
+     * @return array{state:string,ok:bool,who:?string,error:?string}
+     */
+    public static function currentConnectionHealth(bool $refresh = false): array
+    {
+        if (!$refresh && self::$currentConnectionHealth !== null) {
+            return self::$currentConnectionHealth;
+        }
+
+        return self::$currentConnectionHealth = self::connectionHealth(
+            ServerConfig::params()
+        );
     }
 
     /**
@@ -139,9 +234,7 @@ final class Setup
         try {
             $context = AdminServerContext::resolve();
             if (in_array((string) ($context['state'] ?? ''), ['ambiguous', 'invalid'], true)) {
-                return self::saveFailure(
-                    'Selecione primeiro o servidor BladeCP usado pelas telas administrativas.'
-                );
+                return self::saveFailure(I18n::t('admin.setup.select_server_first'));
             }
             $hash = self::encryptStrict(trim($key));
             if ($hash === null) {
@@ -257,10 +350,9 @@ final class Setup
     }
 
     /** @return array{ok:false,mode:string,error:string} */
-    private static function saveFailure(
-        string $message = 'Não foi possível proteger e salvar a credencial. Nenhuma alteração foi aplicada.'
-    ): array
+    private static function saveFailure(?string $message = null): array
     {
+        $message ??= I18n::t('admin.setup.credential_save_failed');
         return [
             'ok' => false,
             'mode' => '',

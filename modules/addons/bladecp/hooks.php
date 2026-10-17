@@ -3,16 +3,11 @@
 /**
  * Hooks do ADDON BladeCP.
  *
- * Sincronização estrutural diária pelo `DailyCronJob`, disparado pelo cron de
- * sistema do WHMCS. Não requer cron próprio. A cada execução reaplica a
- * configuração do grupo
- * de Configurable Options aos produtos JÁ vinculados → componente
- * novo no catálogo BladeCP aparece sozinho no order form do cliente.
- *
- * Idempotente e preservador de preços: `reconcileSubs` e `ensurePricing` não
- * tocam `tblpricing` existente. É reversível e fail-soft. Não cria grupo nem
- * vincula automaticamente produtos novos, pois a sincronização inicial é
- * manual.
+ * As filas leves e a sincronização diária rodam no cron próprio do módulo
+ * (cron.php, a cada minuto). Os hooks do cron do WHMCS só socorrem esse
+ * trabalho quando o cron próprio para: filas após 15 minutos sem sinal e o
+ * trabalho diário após 36 horas sem sucesso. Em operação normal, eles saem
+ * na hora. Os hooks de evento continuam imediatos.
  *
  * Entrypoint separado do WHMCS e independente da ordem de load do
  * bladecp.php. O bootstrap dual-prefix preserva a ponte addon + server.
@@ -31,60 +26,65 @@ require_once __DIR__ . '/../../servers/bladecp/bootstrap.php';
     __DIR__ . '/../../servers/bladecp'
 );
 
-use WHMCS\Module\Addon\Bladecp\ConfigurableOptions;
-use WHMCS\Module\Addon\Bladecp\CatalogAvailabilitySync;
-use WHMCS\Module\Addon\Bladecp\PlanSync;
-use WHMCS\Module\Addon\Bladecp\Provisioning;
-use WHMCS\Module\Addon\Bladecp\WebhookEventStore;
-use WHMCS\Module\Server\Bladecp\Helpers\AdminServerContext;
+use WHMCS\Module\Addon\Bladecp\DailySync;
+use WHMCS\Module\Addon\Bladecp\ModuleCron;
+use WHMCS\Module\Addon\Bladecp\ModuleCronAlert;
+use WHMCS\Module\Addon\Bladecp\VibeServiceIdentityCta;
+use WHMCS\Module\Addon\Bladecp\VibeSupportAdminCta;
+use WHMCS\Module\Addon\Bladecp\VibePromptCard;
+use WHMCS\Module\Addon\Bladecp\FastDeployClientArea;
 use WHMCS\Module\Server\Bladecp\Ui\OrderFormSkin;
 
 if (function_exists('add_hook')) {
+    add_hook('UserLogout', 1, static function ($vars): void {
+        \WHMCS\Module\Server\Bladecp\Helpers\FederationLogout::onLogout(is_array($vars) ? $vars : []);
+    });
+    add_hook('AdminLogout', 1, static function ($vars): void {
+        \WHMCS\Module\Server\Bladecp\Helpers\FederationLogout::onAdminLogout(is_array($vars) ? $vars : []);
+    });
+    add_hook('AfterCronJob', 1, static function (): void {
+        if (class_exists(ModuleCron::class)) {
+            // Rescue only: returns at once while the module cron is alive.
+            try { ModuleCron::rescueQueues(); } catch (\Throwable) { }
+            // Watches the module cron from outside it.
+            try { ModuleCronAlert::run(); } catch (\Throwable) { }
+            return;
+        }
+        try { \WHMCS\Module\Server\Bladecp\Helpers\FederationLogout::flush(); } catch (\Throwable) { }
+        try { \WHMCS\Module\Addon\Bladecp\VibeWelcomeQueue::flush(); } catch (\Throwable) { }
+    });
+    add_hook('AfterModuleCreate', 1, static function ($vars): void {
+        $params = is_array($vars) && is_array($vars['params'] ?? null) ? $vars['params'] : [];
+        $serviceId = filter_var($params['serviceid'] ?? null, FILTER_VALIDATE_INT);
+        if ($serviceId !== false && $serviceId > 0) {
+            // Delivery runs after the native status transition and native
+            // welcome handling, never during provisioning or an SSO redirect.
+            \WHMCS\Module\Addon\Bladecp\VibeWelcomeQueue::enqueue((int) $serviceId);
+        }
+    });
     OrderFormSkin::registerHook();
+    VibeServiceIdentityCta::registerHook();
+    VibeSupportAdminCta::registerHook();
+    VibePromptCard::registerHook();
+    FastDeployClientArea::registerHook();
+    if (method_exists(\WHMCS\Module\Addon\Bladecp\WordPress\ClientArea::class, 'registerHook')) {
+        \WHMCS\Module\Addon\Bladecp\WordPress\ClientArea::registerHook();
+    }
+    add_hook('InvoicePaid', 2, static function (): void {
+        try { \WHMCS\Module\Addon\Bladecp\FastDeploy\Expiry::run(); } catch (\Throwable) { }
+    });
 
     add_hook('DailyCronJob', 1, static function ($vars): void {
         try {
-            $contexts = AdminServerContext::candidates();
-            if ($contexts === []) {
-                bladecp_cron_log(
-                    'BladeCP cron sync: skipped; server_id=0; reason=no-configured-server;'
-                );
+            if (class_exists(ModuleCron::class)) {
+                // Rescue only: runs when the daily work has not succeeded for
+                // 36 hours, since the module cron normally runs it.
+                ModuleCron::rescueDaily();
                 return;
             }
-            $components = ConfigurableOptions::syncAllLinked();
-            $webhooksPruned = WebhookEventStore::prune(30);
-            foreach ($contexts as $context) {
-                $serverId = (int) ($context['id'] ?? 0);
-                if ($serverId <= 0) {
-                    continue;
-                }
-                $catalog = PlanSync::reconcileAvailabilityForServer($serverId);
-                $expired = CatalogAvailabilitySync::closeExpired(
-                    $serverId,
-                    Provisioning::serverGroup($serverId)
-                );
-                if (($catalog['ok'] ?? false) !== true) {
-                    bladecp_cron_log(
-                        'BladeCP cron sync: skipped; server_id=' . $serverId
-                        . '; reason=catalog-'
-                        . preg_replace('/[^a-z-]/', '', (string) ($catalog['reason'] ?? 'unavailable'))
-                        . ';'
-                    );
-                    continue;
-                }
-                bladecp_cron_log(
-                    'BladeCP cron sync: completed; server_id=' . $serverId
-                    . '; catalog_processed=' . (int) ($catalog['processed'] ?? 0)
-                    . '; catalog_blocked=' . (int) ($catalog['blocked'] ?? 0)
-                    . '; components_ran=' . (!empty($components['ran']) ? '1' : '0')
-                    . '; expired=' . $expired
-                    . '; webhooks_pruned=' . $webhooksPruned . ';'
-                );
-            }
+            DailySync::run();
         } catch (\Throwable) {
-            bladecp_cron_log(
-                'BladeCP cron sync: failed; server_id=0; reason=unexpected;'
-            );
+            bladecp_cron_log('BladeCP cron sync: failed; server_id=0; reason=unexpected;');
         }
     });
 }

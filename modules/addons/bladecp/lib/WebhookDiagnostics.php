@@ -6,6 +6,7 @@ namespace WHMCS\Module\Addon\Bladecp;
 
 use WHMCS\Module\Server\Bladecp\Helpers\ServerConfig;
 use WHMCS\Module\Server\Bladecp\Helpers\Logger;
+use WHMCS\Module\Addon\Bladecp\Admin\I18n;
 
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
@@ -83,14 +84,14 @@ final class WebhookDiagnostics
     {
         $deliveryUuid = trim($deliveryUuid);
         if ($deliveryUuid === '') {
-            return ['ok' => false, 'error' => 'Entrega inválida.', 'delivery' => null];
+            return ['ok' => false, 'error' => I18n::t('admin.webhooks.replay_invalid'), 'delivery' => null];
         }
         try {
             $client = self::client();
             if ($client === null) {
                 return [
                     'ok' => false,
-                    'error' => 'Servidor BladeCP não configurado.',
+                    'error' => I18n::t('viewmodels.webhookConfig.errors.serverNotConfigured'),
                     'delivery' => null,
                 ];
             }
@@ -102,7 +103,7 @@ final class WebhookDiagnostics
             if ($delivery === null) {
                 return [
                     'ok' => false,
-                    'error' => 'A API não confirmou o reenvio.',
+                    'error' => I18n::t('admin.webhooks.replay_unconfirmed'),
                     'delivery' => null,
                 ];
             }

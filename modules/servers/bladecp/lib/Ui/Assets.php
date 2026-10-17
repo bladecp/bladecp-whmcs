@@ -31,7 +31,7 @@ final class Assets
   --bcp-mono:monospace;
   --bcp-sh:0 1px 2px rgba(11,15,23,.04),
     0 8px 24px -12px rgba(11,15,23,.14);
-  all:revert;display:block;color:var(--bcp-ink);
+  box-sizing:border-box;display:block;color:var(--bcp-ink);
   font-family:inherit;font-size:14px;line-height:1.5;
   font-weight:normal;
   -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;

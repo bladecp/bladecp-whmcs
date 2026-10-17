@@ -7,6 +7,8 @@ namespace WHMCS\Module\Server\Bladecp {
         die('This file cannot be accessed directly');
     }
 
+    require_once __DIR__ . '/deployment-lock.php';
+
     /**
      * Registra os autoloaders nativos do pacote BladeCP sem Composer.
      *

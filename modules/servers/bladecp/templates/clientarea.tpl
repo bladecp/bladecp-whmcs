@@ -11,3 +11,8 @@
   </table>
 </div>
 {/if}
+{if $vibeSsoUrl && !$vibePanelHasAction}
+<div class="bladecp-overview">
+  <p><a class="btn btn-primary" data-bladecp-vibe-sso="true" href="{$vibeSsoUrl|escape:'html'}">Abrir o Vibe</a></p>
+</div>
+{/if}

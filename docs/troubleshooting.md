@@ -42,14 +42,65 @@ Verify that WHMCS's normal daily cron is running successfully. The module
 uses that scheduler for usage updates; it does not provide a separate cron
 command.
 
+## Module cron stopped
+
+Open the Diagnostics tab of the addon. It shows the last run of each task, the
+last error and the command to schedule. Confirm that the crontab line runs as
+the user that runs the WHMCS PHP and that its path points to this WHMCS. Run
+the command by hand to see its report: it prints one JSON line.
+
 ## Vibe product cannot be provisioned
 
-This is expected. Vibe is not provisioned through this module. Remove the
-`bladecp` module assignment from that product and use the appropriate Vibe
-service workflow.
+Confirm that the plan was imported from the current partner catalog with Vibe
+channel availability enabled, that the product type is `vibe`, and that the
+server API key has the required Vibe scopes. The module does not send provider
+AI credentials, so configure those through the BladeCP partner workflow.
+
+## Federated sign-in cannot continue
+
+Check the selected server, public installation registration, key revision and
+remote capability status. Do not paste the private signing key into support
+messages or another application. Start a new attempt from the customer's own
+WHMCS session if a callback expired or was already consumed.
+
+Never repair an identity collision by matching email addresses or copying an
+account identifier from another service. Complete the requested ownership
+verification instead. A disabled installation, revoked session or suspended
+service must be corrected by its authorized administrator, not bypassed by
+falling back to an older sign-in flow.
 
 ## Get help
 
 When contacting support, include the WHMCS version, PHP version, module
 version, the affected service ID and the relevant error message. Never send
 the API key or webhook signing secret.
+
+## Vibe offers waiting for synchronization
+
+Open **Plans** in the BladeCP addon and review each Vibe plan's readiness and
+synchronization details. These are separate requirements:
+
+1. The selected WHMCS server must use a partner key issued for the API host
+   configured in that server record. A test WHMCS installation keeps its own
+   server record, key and catalog, so configure and synchronize it separately.
+2. The technical plan needs an active Vibe reseller enrollment and an allowed
+   AI mode. Partner AI requires a supported, validated credential for that
+   server. Unpublished and administratively disabled plans remain blocked.
+3. The active commercial profile must use the WHMCS Addon channel. Its allowed
+   hosts, portal, support and handoff URLs should point to this installation.
+   Editing or submitting a profile for review does not prove that it is active.
+4. Import the available plan into this WHMCS, configure its price and make the
+   product visible when ready for sale. Select **Sync Vibe offers**. The addon
+   also synchronizes after imports and price changes and retries on daily cron.
+
+Changing the handoff URL does not import products or refresh prices. A stale
+price requires a new accepted catalog snapshot. Synchronization acceptance
+alone does not mean that every offer is published; technical readiness and the
+active commercial profile are still required. Disabled offers require an
+explicit administrative reactivation.
+
+If the diagnostic reports different local and remote product IDs, ask the
+platform administrator to review the mapping. Do not copy IDs from another
+WHMCS installation. The latest attempt is shown for the selected server;
+connection failures and mapping conflicts are reported separately. Older API
+versions may not provide detailed diagnostics.

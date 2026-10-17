@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace WHMCS\Module\Addon\Bladecp;
 
+use WHMCS\Module\Addon\Bladecp\Admin\I18n;
+
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
 }
@@ -68,7 +70,6 @@ final class Combos
                 $t->timestamp('updated_at')->nullable();
             });
         }
-        self::healAccess();
     }
 
     /**
@@ -231,10 +232,10 @@ final class Combos
         $slugs = self::cleanSlugs($components);
         $errors = [];
         if ($name === '') {
-            $errors[] = 'Nome do combo é obrigatório.';
+            $errors[] = I18n::t('admin.combos.name_required');
         }
         if ($slugs === []) {
-            $errors[] = 'Selecione ao menos um componente.';
+            $errors[] = I18n::t('admin.combos.component_required');
         }
         if ($errors !== []) {
             return ['ok' => false, 'errors' => $errors, 'id' => $id];
@@ -243,7 +244,7 @@ final class Combos
         if ($db === null) {
             return [
                 'ok' => false,
-                'errors' => ['Banco indisponível.'],
+                'errors' => [I18n::t('admin.combos.database_unavailable')],
                 'id' => $id,
             ];
         }

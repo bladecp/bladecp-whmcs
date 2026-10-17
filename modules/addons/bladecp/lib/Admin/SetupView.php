@@ -16,9 +16,12 @@ if (!defined('WHMCS')) {
 /** Fluxo de configuração inicial e produto de teste. */
 final class SetupView
 {
-    public static function render(string $base, string $error = '', bool $forceEdit = false): string
+    public static function render(string $base, string $error = '', bool $forceEdit = false, string $federationMessage = ''): string
     {
-        return self::setupView($base, $error, $forceEdit);
+        $cards = self::setupProductSection($base) . FederationView::render($base, $federationMessage);
+
+        return self::setupView($base, $error, $forceEdit)
+            . ($cards !== '' ? '<div class="bcp-setup-extras">' . $cards . '</div>' : '');
     }
     public static function setupView(
         string $base,
@@ -40,6 +43,13 @@ final class SetupView
         $editMode = $existing === null
             || $forceEdit
             || (string) ($_GET['edit'] ?? '') === '1';
+        $serverDisabled = $existing !== null && (int) ($existing->disabled ?? 0) === 1;
+        $connectionHealth = $existing === null || $editMode || $serverDisabled
+            ? ['state' => 'unconfigured', 'ok' => false, 'who' => null, 'error' => null]
+            : Setup::currentConnectionHealth();
+        $connectionState = $serverDisabled
+            ? 'disabled'
+            : (string) ($connectionHealth['state'] ?? 'unavailable');
 
         // Mensagem de sucesso após o redirecionamento: revalida via Server record já
         // gravado pra mostrar "conectado como…".
@@ -155,25 +165,46 @@ final class SetupView
                 : ($host === Setup::HOST_PRODUCTION
                     ? I18n::t('setup.environment.production')
                     : I18n::t('setup.environment.custom'));
-            $disabled = (int) ($existing->disabled ?? 0) === 1;
+            $healthState = $connectionState;
+            $healthClass = match ($healthState) {
+                'valid' => 'is-valid',
+                'rejected' => 'is-invalid',
+                default => 'is-unavailable',
+            };
+            $eyebrowKey = match ($healthState) {
+                'valid' => 'setup.current.validEyebrow',
+                'rejected' => 'setup.current.rejectedEyebrow',
+                'disabled' => 'setup.current.disabledEyebrow',
+                default => 'setup.current.unavailableEyebrow',
+            };
+            $titleKey = match ($healthState) {
+                'valid' => 'setup.current.validTitle',
+                'rejected' => 'setup.current.rejectedTitle',
+                'disabled' => 'setup.current.disabledTitle',
+                default => 'setup.current.unavailableTitle',
+            };
+            $credentialDetailKey = match ($healthState) {
+                'valid' => 'setup.current.validCredentialDetail',
+                'rejected' => 'setup.current.rejectedCredentialDetail',
+                'disabled' => 'setup.current.disabledCredentialDetail',
+                default => 'setup.current.unavailableCredentialDetail',
+            };
             $connection = '<div class="bcp-setup-current'
-                . ($disabled ? ' is-attention' : '') . '">'
+                . ' ' . $healthClass . '">'
                 . '<div class="bcp-setup-current-head"><span class="bcp-setup-current-icon">'
-                . ($disabled ? '!' : Layout::icon('check')) . '</span><div>'
+                . ($healthState === 'valid' ? Layout::icon('check') : '!') . '</span><div>'
                 . '<span class="bcp-eyebrow">'
-                . Layout::escape(I18n::t('setup.current.eyebrow')) . '</span><h4>'
-                . Layout::escape(I18n::t($disabled
-                    ? 'setup.current.disabledTitle'
-                    : 'setup.current.configuredTitle'))
+                . Layout::escape(I18n::t($eyebrowKey)) . '</span><h4>'
+                . Layout::escape(I18n::t($titleKey))
                 . '</h4></div><span class="bcp-badge '
-                . ($disabled ? 'is-warn' : 'is-ok') . '">'
+                . ($healthState === 'valid' ? 'is-ok' : 'is-warn') . '">'
                 . Layout::escape($environment) . '</span></div>'
                 . '<dl><div><dt>' . Layout::escape(I18n::t('setup.current.server'))
                 . '</dt><dd><code>'
                 . Layout::escape($host !== '' ? $host : Setup::HOST_PRODUCTION)
                 . '</code></dd></div><div><dt>'
                 . Layout::escape(I18n::t('setup.current.credential')) . '</dt>'
-                . '<dd>' . Layout::escape(I18n::t('setup.current.credentialDetail')) . '</dd>'
+                . '<dd>' . Layout::escape(I18n::t($credentialDetailKey)) . '</dd>'
                 . '</div></dl><div class="bcp-actions">'
                 . '<form method="post" action="' . Layout::escape($base) . '">'
                 . Layout::token()
@@ -214,10 +245,15 @@ final class SetupView
                     ? I18n::t('setup.header.quickSubtitle')
                     : ($editMode
                         ? I18n::t('setup.header.replaceSubtitle')
-                        : I18n::t('setup.header.connectionSubtitle'))
+                        : I18n::t(match ($connectionState) {
+                            'valid' => 'setup.header.validSubtitle',
+                            'rejected' => 'setup.header.rejectedSubtitle',
+                            'disabled' => 'setup.header.disabledSubtitle',
+                            default => 'setup.header.unavailableSubtitle',
+                        }))
             ),
             Layout::tabs($base, 'setup') . $body
-        ) . self::setupProductSection($base);
+        );
     }
 
     /**
@@ -322,14 +358,14 @@ final class SetupView
                 . Layout::escape(I18n::t('setup.product.createAction')) . '</button></div></form>';
         }
 
-        return '<div class="bcp-setup-product-card">' . Layout::card(
+        return Layout::card(
             Layout::header(
                 I18n::t('setup.product.title'),
                 I18n::t('setup.product.subtitle'),
                 false
             ),
             $body
-        ) . '</div>';
+        );
     }
 
     /** Resumo do servidor usado somente na composição da Visão geral. */

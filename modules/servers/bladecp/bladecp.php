@@ -4,9 +4,8 @@
  * BladeCP — WHMCS Provisioning Module (entrypoint).
  *
  * Thin global functions delegating to ProductTypeRouter. The
- * `BladeCP Product Type` ConfigOption selects Functions\{Stack,Edge,Dedicated\}.
- * Vibe is recognized for compatibility, but its services are not provisioned
- * by this module.
+ * `BladeCP Product Type` ConfigOption selects the matching Functions namespace.
+ * Vibe uses its dedicated account lifecycle and never falls back to infrastructure.
  *
  * Native WHMCS autoload (no Composer, no vendor/) over `lib/`.
  */
@@ -157,7 +156,61 @@ function bladecp_ServiceSingleSignOn(array $params): array
     return bladecp_dispatch('ServiceSingleSignOn', $params);
 }
 
-function bladecp_ClientArea(array $params)
-{
-    return bladecp_dispatch('ClientArea', $params);
+if (!function_exists('bladecp_ClientArea')) {
+    function bladecp_ClientArea(array $params)
+    {
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'wordpress'
+            && class_exists(\WHMCS\Module\Addon\Bladecp\WordPress\ClientArea::class)) {
+            return \WHMCS\Module\Addon\Bladecp\WordPress\ClientArea::render();
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'fast-deploy'
+            && class_exists(\WHMCS\Module\Addon\Bladecp\FastDeployClientArea::class)) {
+            return \WHMCS\Module\Addon\Bladecp\FastDeployClientArea::render();
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp' && function_exists('bladecp_federation_clientarea')
+            && (in_array((string) ($_GET['action'] ?? ''), ['vibe-federation', 'vibe-admin-support'], true) || \WHMCS\Module\Addon\Bladecp\FederationFlow::handlesCallback($_GET))) {
+            return bladecp_federation_clientarea($params);
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'vibe-service-identity'
+            && function_exists('bladecp_vibe_service_identity_clientarea')) {
+            return bladecp_vibe_service_identity_clientarea($params);
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'vibe-identity-callback'
+            && is_array($_SESSION['bladecp_vibe_service_identity_context'] ?? null)
+            && (($_SESSION['bladecp_vibe_service_identity_context']['route'] ?? '') === 'vibe-service-identity')
+            && function_exists('bladecp_vibe_service_identity_clientarea')) {
+            return bladecp_vibe_service_identity_clientarea($params);
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'vibe-free'
+            && function_exists('bladecp_vibe_free_clientarea')) {
+            return bladecp_vibe_free_clientarea($params);
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'commercial-handoff'
+            && function_exists('bladecp_commercial_handoff_clientarea')) {
+            return bladecp_commercial_handoff_clientarea($params);
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'commercial-upgrade'
+            && function_exists('bladecp_commercial_upgrade_clientarea')) {
+            return bladecp_commercial_upgrade_clientarea($params);
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'vibe-context-reauthorize'
+            && function_exists('bladecp_vibe_context_reauthorize_clientarea')) {
+            return bladecp_vibe_context_reauthorize_clientarea($params);
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'claim'
+            && function_exists('bladecp_migration_claim_clientarea')) {
+            return bladecp_migration_claim_clientarea($params);
+        }
+
+        return bladecp_dispatch('ClientArea', $params);
+    }
 }

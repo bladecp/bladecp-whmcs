@@ -56,11 +56,20 @@ use WHMCS\Module\Server\Bladecp\Helpers\ParamsMapper;
 use WHMCS\Module\Server\Bladecp\Helpers\ProductCapability;
 use WHMCS\Module\Server\Bladecp\Helpers\ProductType;
 
-check('public package version is complete and matches module metadata', static function () use ($serverRoot, $moduleVersion, $moduleRevision): void {
+check('public package version and distribution metadata are complete', static function () use ($serverRoot, $moduleVersion, $moduleRevision, $distributionChannel, $publicReleaseTag): void {
     $metadata = json_decode((string) file_get_contents($serverRoot . '/whmcs.json'), true, 512, JSON_THROW_ON_ERROR);
     expect(is_string($moduleVersion) && $moduleVersion !== '', 'module version is missing');
     expect(($metadata['version'] ?? null) === $moduleVersion, 'module metadata version does not match');
-    expect(is_string($moduleRevision) && preg_match('/^[0-9a-f]{7,40}$/', $moduleRevision) === 1, 'public revision was not materialized');
+    expect($publicReleaseTag === 'v' . $moduleVersion, 'public release tag was not materialized');
+    expect(in_array($distributionChannel, ['prerelease', 'stable'], true), 'public distribution channel is invalid');
+    expect($moduleRevision === null, 'development revision must not be exposed');
+});
+
+check('About metadata exposes public release data without private provenance', static function (): void {
+    $metadata = \WHMCS\Module\Addon\Bladecp\About::metadata();
+    expect(($metadata['releaseTag'] ?? null) === 'v' . ($metadata['version'] ?? ''), 'About release tag does not match version');
+    expect(in_array($metadata['channel'] ?? null, ['prerelease', 'stable'], true), 'About channel is not public');
+    expect(!array_key_exists('revision', $metadata), 'About metadata exposed a source revision');
 });
 
 check('supported product types resolve to their own handlers', static function (): void {
@@ -76,15 +85,10 @@ check('supported product types resolve to their own handlers', static function (
     }
 });
 
-check('Vibe stays recognized but is never provisioned by this module', static function (): void {
+check('Vibe resolves only to its dedicated account handlers', static function (): void {
     expect(ProductType::getFromParams(['configoption1' => ProductType::VIBE]) === ProductType::VIBE, 'Vibe is no longer recognized');
-    try {
-        ProductCapability::handlerClass(ProductType::VIBE, 'CreateAccount');
-    } catch (RuntimeException $error) {
-        expect(str_contains($error->getMessage(), 'vibe'), 'Vibe rejection is not explicit');
-        return;
-    }
-    throw new RuntimeException('Vibe unexpectedly returned a provisioning handler');
+    $handler = ProductCapability::handlerClass(ProductType::VIBE, 'CreateAccount');
+    expect(str_contains($handler, '\\Functions\\Vibe\\CreateAccount'), 'Vibe did not resolve to its dedicated handler');
 });
 
 check('webhook signatures require the exact signed body and timestamp', static function (): void {

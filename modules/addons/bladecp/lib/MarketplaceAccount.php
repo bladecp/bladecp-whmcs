@@ -353,6 +353,9 @@ final class MarketplaceAccount
                     'totalCents' => self::cents($row['totalCents'] ?? null),
                     'status' => trim((string) ($row['status'] ?? '')),
                     'dueDate' => trim((string) ($row['dueDate'] ?? '')),
+                    'dueDateLabel' => ProvisionView::formatBillingDay(
+                        (string) ($row['dueDate'] ?? '')
+                    ),
                 ];
             }
         }

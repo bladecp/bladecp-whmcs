@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace WHMCS\Module\Addon\Bladecp;
 
+use WHMCS\Module\Server\Bladecp\Helpers\ComponentAvailability;
 use WHMCS\Module\Server\Bladecp\Helpers\ComponentRef;
 
 if (!defined('WHMCS')) {
@@ -119,10 +120,17 @@ final class ConfigurableOptions
         // setup sensato pronto); "— Nenhum —" é o opt-out explícito
         // lá embaixo. Sentinela continua a MESMA string (server-side
         // O processamento no servidor usa o valor, e não a posição.
+        // A combo with a component (or pinned version) that left the catalog
+        // cannot be provisioned, so it leaves the order form until edited.
         $comboOpt = null;
         $comboSubs = [];
+        $available = ComponentAvailability::index($catalog);
         foreach ($combos as $cb) {
             $n = trim((string) ($cb['name'] ?? ''));
+            $tokens = is_array($cb['components'] ?? null) ? $cb['components'] : [];
+            if ($available !== [] && ComponentAvailability::unavailableTokens($tokens, $available) !== []) {
+                continue;
+            }
             if ($n !== '' && !in_array($n, $comboSubs, true)) {
                 $comboSubs[] = $n;
             }
@@ -159,6 +167,103 @@ final class ConfigurableOptions
         $remove = array_values(array_diff($currentNames, $desiredNames));
         $keep = array_values(array_intersect($desiredNames, $currentNames));
         return ['add' => $add, 'remove' => $remove, 'keep' => $keep];
+    }
+
+    /**
+     * Combos that reference a component or pinned version the catalog no
+     * longer offers: comboName => unavailable tokens. Pure.
+     *
+     * @param array<int,array{id:int,name:string,components:string[]}> $combos
+     * @param array<int,array<string,mixed>> $catalog
+     * @return array<string,string[]>
+     */
+    public static function unavailableCombos(array $combos, array $catalog): array
+    {
+        $available = ComponentAvailability::index($catalog);
+        if ($available === []) {
+            return [];
+        }
+        $out = [];
+        foreach ($combos as $cb) {
+            $name = trim((string) ($cb['name'] ?? ''));
+            $tokens = is_array($cb['components'] ?? null) ? $cb['components'] : [];
+            $bad = ComponentAvailability::unavailableTokens($tokens, $available);
+            if ($name !== '' && $bad !== []) {
+                $out[$name] = $bad;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * What a sync changes for the customer, choice by choice: the labels
+     * each option will offer against the ones it offers today (visible
+     * only; already hidden choices are not "removed" again). Pure.
+     *
+     * @param array{options:array<int,array{name:string,subs:string[]}>} $spec
+     * @param array<string,string[]> $currentVisible optionName => visible labels
+     * @return array{add:array<string,string[]>,remove:array<string,string[]>,keep:array<string,string[]>}
+     */
+    public static function choiceDiff(array $spec, array $currentVisible): array
+    {
+        $sentinels = [self::COMPONENT_NONE, self::COMBO_NONE];
+        $desired = [];
+        foreach ($spec['options'] as $o) {
+            foreach ($o['subs'] as $sub) {
+                if (!in_array($sub, $sentinels, true)) {
+                    $desired[$o['name']][] = (string) $sub;
+                }
+            }
+        }
+        $out = ['add' => [], 'remove' => [], 'keep' => []];
+        foreach (array_unique(array_merge(array_keys($desired), array_keys($currentVisible))) as $name) {
+            $want = $desired[$name] ?? [];
+            $have = [];
+            foreach ($currentVisible[$name] ?? [] as $label) {
+                if (!in_array($label, $sentinels, true)) {
+                    $have[] = (string) $label;
+                }
+            }
+            foreach (['add' => array_diff($want, $have), 'remove' => array_diff($have, $want), 'keep' => array_intersect($want, $have)] as $k => $list) {
+                if ($list !== []) {
+                    $out[$k][(string) $name] = array_values(array_unique($list));
+                }
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Visible choices of the BladeCP group today: optionName => labels.
+     * Hidden options and hidden choices are left out. Fail-soft `[]`.
+     *
+     * @return array<string,string[]>
+     */
+    public static function currentVisibleChoices(): array
+    {
+        try {
+            $db = self::db();
+            $gid = self::groupId(false);
+            if ($db === null || $gid === null) {
+                return [];
+            }
+            $out = [];
+            foreach ($db::table('tblproductconfigoptions')->where('gid', $gid)->get() as $o) {
+                if ((int) ($o->hidden ?? 0) === 1) {
+                    continue;
+                }
+                $labels = [];
+                foreach ($db::table('tblproductconfigoptionssub')->where('configid', (int) $o->id)->get() as $sub) {
+                    if ((int) ($sub->hidden ?? 0) !== 1) {
+                        $labels[] = (string) $sub->optionname;
+                    }
+                }
+                $out[(string) $o->optionname] = $labels;
+            }
+            return $out;
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     // ── DB (fail-soft, idempotente) ──

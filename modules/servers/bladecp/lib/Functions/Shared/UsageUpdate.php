@@ -173,9 +173,13 @@ final class UsageUpdate
             $q = \WHMCS\Database\Capsule::table('tblhosting as h')
                 ->join('tblcustomfieldsvalues as v', 'v.relid', '=', 'h.id')
                 ->join('tblcustomfields as f', 'f.id', '=', 'v.fieldid')
+                ->join('tblproducts as p', 'p.id', '=', 'h.packageid')
                 ->where('f.fieldname', self::PROVISION_UUID_FIELD)
                 ->where('v.value', '!=', '')
                 ->whereIn('h.domainstatus', ['Active', 'Suspended'])
+                // Vibe accounts have their own operational meters and must
+                // never be written into WHMCS disk/bandwidth columns.
+                ->where('p.configoption1', '!=', 'vibe')
                 ->select('h.id as serviceId', 'v.value as uuid');
             if ($serverId > 0) {
                 $q->where('h.server', $serverId);

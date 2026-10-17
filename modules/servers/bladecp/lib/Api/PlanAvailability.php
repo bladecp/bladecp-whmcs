@@ -30,6 +30,15 @@ final class PlanAvailability
             return self::legacy($plan);
         }
 
+        // The dedicated Vibe account contract publishes a compact catalog
+        // readiness object. It remains fail-closed unless both its channel
+        // flag and ready status are explicit.
+        $type = strtolower(trim((string) ($plan['customerApiProductType'] ?? '')));
+        if ($type === 'vibe' && array_key_exists('status', $raw)
+            && !array_key_exists('salesEligible', $raw)) {
+            return self::vibe($plan, $raw);
+        }
+
         $channel = strtolower(trim((string) ($raw['channel'] ?? 'whmcs')));
         $channelSupported = self::bool($raw['channelSupported'] ?? null);
         $automatic = self::bool($raw['automaticProvisioningReady'] ?? null);
@@ -65,6 +74,36 @@ final class PlanAvailability
             'blockers' => $blockers,
             'checkedAt' => $checkedAt,
             'validUntil' => $validUntil,
+        ];
+    }
+
+    /** @param array<string,mixed> $plan @param array<string,mixed> $raw */
+    private static function vibe(array $plan, array $raw): array
+    {
+        $ready = strtolower(trim((string) ($raw['status'] ?? ''))) === self::READY;
+        $supported = self::bool($plan['channelSupported'] ?? null);
+        $now = time();
+        return [
+            'known' => true,
+            'legacy' => false,
+            'schemaVersion' => 1,
+            'channel' => 'whmcs',
+            'channelSupported' => $supported,
+            'automaticProvisioningReady' => $ready,
+            'salesEligible' => $supported && $ready,
+            'locationRequirement' => 'not_applicable',
+            'readiness' => $ready ? self::READY : self::UNKNOWN,
+            'blockers' => $supported && $ready ? [] : [[
+                'code' => $supported ? 'readiness_unknown' : 'channel_not_supported',
+                'retryable' => true,
+                'action' => $supported
+                    ? 'A conta Vibe ainda não está pronta para venda pelo WHMCS.'
+                    : 'Este plano Vibe não está habilitado para venda pelo WHMCS.',
+            ]],
+            'checkedAt' => gmdate('c', $now),
+            // Compact Vibe availability has no producer TTL. Apply the same
+            // short local freshness window used by legacy catalog snapshots.
+            'validUntil' => gmdate('c', $now + 300),
         ];
     }
 

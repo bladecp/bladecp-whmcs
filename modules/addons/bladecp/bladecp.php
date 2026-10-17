@@ -26,22 +26,25 @@ require_once __DIR__ . '/../../servers/bladecp/bootstrap.php';
 );
 
 use WHMCS\Module\Addon\Bladecp\AdminPage;
+use WHMCS\Module\Addon\Bladecp\About;
 use WHMCS\Module\Addon\Bladecp\Admin\I18n;
 use WHMCS\Module\Addon\Bladecp\CatalogStateRepository;
 use WHMCS\Module\Addon\Bladecp\Combos;
 use WHMCS\Module\Addon\Bladecp\OptionGroupsMap;
 use WHMCS\Module\Addon\Bladecp\WebhookEventStore;
+use WHMCS\Module\Addon\Bladecp\VibeFreeClientArea;
+use WHMCS\Module\Addon\Bladecp\VibeServiceIdentityClientArea;
+use WHMCS\Module\Addon\Bladecp\CommercialActionClientArea;
+use WHMCS\Module\Addon\Bladecp\CommercialUpgradeClientArea;
+use WHMCS\Module\Addon\Bladecp\VibeContextReauthorizeClientArea;
 
 /** Sem campos de credencial. A chave da API permanece no Server record. */
 function bladecp_config(): array
 {
     return [
         'name' => 'BladeCP',
-        'description' => 'Combos/bundles de componentes + sync de '
-            . 'Configurable Options no order form. Não armazena '
-            . 'credenciais — a API key fica no Server record '
-            . '(Setup → Products/Services → Servers).',
-        'version' => '0.9.0-rc.4',
+        'description' => I18n::system('addon.config.description'),
+        'version' => (string) About::metadata()['version'],
         'author' => 'BladeCP',
         'language' => 'english',
         'fields' => [],
@@ -52,16 +55,15 @@ function bladecp_activate(): array
 {
     try {
         bladecp_install_schemas();
+        Combos::healAccess();
         return [
             'status' => 'success',
-            'description' => 'Tabelas de combos e opções configuráveis '
-                . 'criadas. Abra o addon para gerenciar bundles e '
-                . 'sincronizar as opções configuráveis.',
+            'description' => I18n::system('addon.activate.success'),
         ];
     } catch (\Throwable) {
         return [
             'status' => 'error',
-            'description' => 'Não foi possível preparar as tabelas do módulo.',
+            'description' => I18n::system('addon.activate.failed'),
         ];
     }
 }
@@ -91,8 +93,7 @@ function bladecp_deactivate(): array
 {
     return [
         'status' => 'success',
-        'description' => 'O addon foi desativado. Catálogo, vínculos, '
-            . 'combos e histórico foram preservados para uma reativação segura.',
+        'description' => I18n::system('addon.deactivate.success'),
     ];
 }
 
@@ -111,9 +112,233 @@ function bladecp_output(array $vars): void
             );
         } catch (\Throwable) {
         }
-        echo '<div class="alert alert-danger">Não foi possível carregar '
-            . 'esta tela do BladeCP. Tente novamente e consulte o '
-            . 'diagnóstico do módulo.</div>';
+        echo '<div class="alert alert-danger">'
+            . htmlspecialchars(I18n::t('addon.output.failed'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</div>';
+    }
+}
+
+/**
+ * Adds the client area copy, in the customer's language, to a route result.
+ *
+ * Every client route of the addon goes through this, including its error
+ * fallback, so a template never prints a fixed language.
+ *
+ * @param array<string,mixed> $page
+ * @return array<string,mixed>
+ */
+function bladecp_client_copy_page(array $page): array
+{
+    try {
+        $vars = is_array($page['vars'] ?? null) ? $page['vars'] : [];
+        $vars['bladecpCopy'] = \WHMCS\Module\Addon\Bladecp\ClientCopy::domain('client-flows');
+        $page['vars'] = $vars;
+    } catch (\Throwable) {
+    }
+
+    return $page;
+}
+
+/**
+ * Client route used by the Vibe Free call to action.
+ *
+ * GET only renders an authenticated, SSL-only transition. The mutation is a
+ * CSRF-protected POST handled by VibeFreeClientArea.
+ */
+function bladecp_vibe_free_clientarea(array $vars): array
+{
+    try {
+        return bladecp_client_copy_page(VibeFreeClientArea::render($vars));
+    } catch (\Throwable) {
+        return bladecp_client_copy_page([
+            'pagetitle' => 'BladeCP Vibe',
+            'templatefile' => 'vibe-free',
+            'requirelogin' => true,
+            'forcessl' => true,
+            'vars' => [
+                'activationError' => \WHMCS\Module\Addon\Bladecp\ClientCopy::text('client-flows', 'vibe_access_unavailable'),
+                'redirectTo' => '',
+                'stripIdentityCallbackUrl' => false,
+                'traceId' => '',
+                'autoSubmit' => false,
+                'partnerBrandLogoHtml' => \WHMCS\Module\Server\Bladecp\Ui\Brand::logo(32),
+            ],
+        ]);
+    }
+}
+
+function bladecp_federation_clientarea(array $vars): array
+{
+    try { return bladecp_client_copy_page(\WHMCS\Module\Addon\Bladecp\FederationClientArea::render($vars)); }
+    catch (\Throwable) {
+        try { if (function_exists('logActivity')) { logActivity('BladeCP Vibe Owner SSO: route=unexpected_exception'); } } catch (\Throwable) { }
+        return bladecp_client_copy_page(['pagetitle' => 'BladeCP Vibe', 'templatefile' => 'vibe-federation', 'requirelogin' => true, 'forcessl' => true,
+            'vars' => ['transitionError' => true, 'transitionUrl' => '', 'autoSubmit' => false]]);
+    }
+}
+
+/** Authenticated activation route for an existing paid Vibe Pro service. */
+function bladecp_vibe_service_identity_clientarea(array $vars): array
+{
+    try {
+        return bladecp_client_copy_page(VibeServiceIdentityClientArea::render($vars));
+    } catch (\Throwable) {
+        return bladecp_client_copy_page([
+            'pagetitle' => 'BladeCP Vibe',
+            'templatefile' => 'vibe-service-identity',
+            'requirelogin' => true,
+            'forcessl' => true,
+            'vars' => [
+                'activationError' => \WHMCS\Module\Addon\Bladecp\ClientCopy::text('client-flows', 'vibe_access_unavailable'),
+                'identityError' => '',
+                'identityRedirect' => '',
+                'redirectTo' => '',
+                'serviceId' => 0,
+                'stripIdentityCallbackUrl' => false,
+                'partnerBrandLogoHtml' => \WHMCS\Module\Server\Bladecp\Ui\Brand::logo(32),
+            ],
+        ]);
+    }
+}
+
+/** Fixed, authenticated destination for opaque commercial Vibe tickets. */
+function bladecp_commercial_handoff_clientarea(array $vars): array
+{
+    try {
+        return bladecp_client_copy_page(CommercialActionClientArea::render($vars));
+    } catch (\Throwable) {
+        return bladecp_client_copy_page([
+            'pagetitle' => 'BladeCP Vibe',
+            'templatefile' => 'commercial-handoff',
+            'requirelogin' => true,
+            'forcessl' => true,
+            'vars' => [
+                'redirectTo' => '',
+                'commercialActionError' => \WHMCS\Module\Addon\Bladecp\ClientCopy::text('client-flows', 'commercial_action_failed'),
+                'partnerBrandLogoHtml' => \WHMCS\Module\Server\Bladecp\Ui\Brand::logo(32),
+            ],
+        ]);
+    }
+}
+
+function bladecp_commercial_upgrade_clientarea(array $vars): array
+{
+    try {
+        return bladecp_client_copy_page(CommercialUpgradeClientArea::render($vars));
+    } catch (\Throwable) {
+        return bladecp_client_copy_page([
+            'pagetitle' => 'BladeCP Vibe', 'templatefile' => 'commercial-upgrade',
+            'requirelogin' => true, 'forcessl' => true,
+            'vars' => ['commercialUpgradeError' => \WHMCS\Module\Addon\Bladecp\ClientCopy::text('client-flows', 'offer_unopened')],
+        ]);
+    }
+}
+
+/** Fixed, authenticated return point for stale direct Vibe contexts. */
+function bladecp_vibe_context_reauthorize_clientarea(array $vars): array
+{
+    try {
+        return bladecp_client_copy_page(VibeContextReauthorizeClientArea::render($vars));
+    } catch (\Throwable) {
+        return bladecp_client_copy_page([
+            'pagetitle' => 'BladeCP Vibe',
+            'templatefile' => 'vibe-context-reauthorize',
+            'requirelogin' => true,
+            'forcessl' => true,
+            'vars' => [
+                'redirectTo' => '',
+                'contextRecoveryError' => \WHMCS\Module\Addon\Bladecp\ClientCopy::text('client-flows', 'access_unconfirmed'),
+                'partnerBrandLogoHtml' => \WHMCS\Module\Server\Bladecp\Ui\Brand::logo(32),
+            ],
+        ]);
+    }
+}
+
+/** Account confirmation for a migration started by the account holder in cPanel. */
+function bladecp_migration_claim_clientarea(array $vars): array
+{
+    try {
+        return \WHMCS\Module\Addon\Bladecp\MigrationClaimClientArea::render($vars);
+    } catch (\Throwable) {
+        return [
+            'pagetitle' => 'BladeCP',
+            'templatefile' => 'migration-claim',
+            'requirelogin' => true,
+            'forcessl' => true,
+            'vars' => ['claimHtml' => '<div class="bcp-claim"><div class="alert alert-danger" role="alert">'
+                . htmlspecialchars((string) (\WHMCS\Module\Addon\Bladecp\MigrationClaimClientArea::copy()['failed'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+                . '</div></div>'],
+        ];
+    }
+}
+
+/**
+ * WHMCS resolves module callbacks case-insensitively. The addon and server
+ * module therefore share this single global callback without redeclaring it.
+ */
+if (!function_exists('bladecp_ClientArea')) {
+    function bladecp_ClientArea(array $params)
+    {
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'wordpress'
+            && class_exists(\WHMCS\Module\Addon\Bladecp\WordPress\ClientArea::class)) {
+            return \WHMCS\Module\Addon\Bladecp\WordPress\ClientArea::render();
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'fast-deploy'
+            && class_exists(\WHMCS\Module\Addon\Bladecp\FastDeployClientArea::class)) {
+            return \WHMCS\Module\Addon\Bladecp\FastDeployClientArea::render();
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (in_array((string) ($_GET['action'] ?? ''), ['vibe-federation', 'vibe-admin-support'], true) || \WHMCS\Module\Addon\Bladecp\FederationFlow::handlesCallback($_GET))) {
+            return bladecp_federation_clientarea($params);
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'vibe-service-identity') {
+            return bladecp_vibe_service_identity_clientarea($params);
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'vibe-identity-callback'
+            && is_array($_SESSION['bladecp_vibe_service_identity_context'] ?? null)
+            && (($_SESSION['bladecp_vibe_service_identity_context']['route'] ?? '') === 'vibe-service-identity')) {
+            return bladecp_vibe_service_identity_clientarea($params);
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && in_array((string) ($_GET['action'] ?? ''), ['vibe-free', 'vibe-identity-callback'], true)) {
+            return bladecp_vibe_free_clientarea($params);
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'commercial-handoff') {
+            return bladecp_commercial_handoff_clientarea($params);
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'commercial-upgrade') {
+            return bladecp_commercial_upgrade_clientarea($params);
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'vibe-context-reauthorize') {
+            return bladecp_vibe_context_reauthorize_clientarea($params);
+        }
+        if ((string) ($_GET['m'] ?? '') === 'bladecp'
+            && (string) ($_GET['action'] ?? '') === 'claim') {
+            return bladecp_migration_claim_clientarea($params);
+        }
+
+        if (function_exists('bladecp_dispatch')) {
+            return bladecp_dispatch('ClientArea', $params);
+        }
+
+        return bladecp_client_copy_page([
+            'pagetitle' => 'BladeCP',
+            'templatefile' => 'vibe-free',
+            'requirelogin' => true,
+            'forcessl' => true,
+            'vars' => [
+                'activationError' => \WHMCS\Module\Addon\Bladecp\ClientCopy::text('client-flows', 'vibe_access_unavailable'),
+                'redirectTo' => '',
+                'traceId' => '',
+                'autoSubmit' => false,
+            ],
+        ]);
     }
 }
 
@@ -125,4 +350,5 @@ function bladecp_install_schemas(): void
     CatalogStateRepository::installSchema();
     // Ledger persistente: processing, processed, failed e ignored.
     WebhookEventStore::installSchema();
+    \WHMCS\Module\Addon\Bladecp\FastDeploy\BillingStore::installSchema();
 }

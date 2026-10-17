@@ -298,7 +298,9 @@ final class MarketplaceView
                 . '</td><td>'
                 . self::marketplaceStatusBadge((string) ($it['status'] ?? ''))
                 . '</td><td class="bcp-row-v">'
-                . (($it['dueDate'] ?? '') !== '' ? Layout::escape($it['dueDate']) : '—')
+                . (($it['dueDateLabel'] ?? '') !== ''
+                    ? Layout::escape($it['dueDateLabel'])
+                    : (($it['dueDate'] ?? '') !== '' ? Layout::escape($it['dueDate']) : '—'))
                 . '</td></tr>';
         }
         $table = '<div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr><th scope="col">'

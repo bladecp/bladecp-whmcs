@@ -18,5 +18,8 @@ return [
     'layout.tabs.webhooks' => 'Webhooks',
     'layout.tabs.operation' => 'Operação',
     'layout.tabs.diagnostics' => 'Diagnóstico',
+    'layout.loading.action' => 'Carregando…',
+    'layout.loading.title' => 'Consultando a BladeCP',
+    'layout.loading.detail' => 'Isso pode levar alguns segundos.',
     'layout.opensInNewTab' => '(abre em nova aba)',
 ];

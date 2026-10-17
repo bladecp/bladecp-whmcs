@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace WHMCS\Module\Server\Bladecp\Functions\Dedicated;
 
+use WHMCS\Module\Server\Bladecp\Helpers\ClientText;
+
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
 }
@@ -15,7 +17,7 @@ final class ServiceSingleSignOn
     {
         return [
             'success' => false,
-            'errorMsg' => 'Este servidor não oferece login único pelo painel.',
+            'errorMsg' => ClientText::get('sso_dedicated_unavailable', [], null, $params),
         ];
     }
 }

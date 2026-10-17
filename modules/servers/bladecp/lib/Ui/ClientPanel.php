@@ -66,6 +66,7 @@ final class ClientPanel
             : ((string) ($d['statusLabel'] ?? '') ?: $t($statusKey));
 
         $domain = trim((string) ($d['domain'] ?? ''));
+        $isVibe = ($d['productType'] ?? '') === 'vibe';
         $domainUrl = $domain !== ''
             ? 'https://' . preg_replace('#^https?://#i', '', $domain)
             : '';
@@ -94,6 +95,11 @@ final class ClientPanel
             );
 
         $combo = trim((string) ($d['combo'] ?? ''));
+        if ($isVibe) {
+            $facts = $row($t('plan'), $orDash($h($planLabel)))
+                . $row($t('vibe_account'), $orDash($h((string) ($d['accountId'] ?? ''))))
+                . $row($t('vibe_access'), $h($t('vibe_access_integrated')));
+        }
         if ($combo !== '') {
             $comboSource = (string) ($d['comboSource'] ?? '') === 'customer'
                 ? $t('combo_customer') : $t('combo_product');
@@ -334,19 +340,39 @@ final class ClientPanel
                 . '</div>';
         }
 
-        $actions = $domainUrl !== ''
-            ? '<div class="bcp-actions bcp-hero-actions">'
-                . '<a class="bcp-btn" href="' . $h($domainUrl) . '" '
+        // The provider issues an access link only for a running service;
+        // the customer still signs in to the account that owns it.
+        $panelServiceId = (int) ($d['serviceId'] ?? 0);
+        $panelButton = !empty($d['panelAccess']) && $panelServiceId > 0
+            && in_array($status, ['active', 'running', 'succeeded'], true)
+            ? '<a class="bcp-btn" href="clientarea.php?action=productdetails&amp;id='
+                . $panelServiceId . '&amp;dosinglesignon=1">'
+                . Icons::get('server', 15) . $t('open_panel') . '</a>'
+            : '';
+        $siteButton = $domainUrl !== ''
+            ? '<a class="bcp-btn" href="' . $h($domainUrl) . '" '
                 . 'target="_blank" rel="noopener">'
                 . Icons::get('external-link', 15) . $t('visit_site') . '</a>'
-                . '</div>'
             : '';
+        $actions = $panelButton . $siteButton !== ''
+            ? '<div class="bcp-actions bcp-hero-actions">' . $panelButton . $siteButton . '</div>'
+            : '';
+
+        if ($isVibe) {
+            $componentsHtml = '';
+            $serviceId = (int) ($d['serviceId'] ?? 0);
+            $actions = $serviceId > 0 && $status === 'active'
+                ? '<div class="bcp-actions bcp-hero-actions"><a class="bcp-btn" data-bladecp-vibe-sso="true" href="clientarea.php?action=productdetails&amp;id='
+                    . $serviceId . '&amp;dosinglesignon=1">'
+                    . Icons::get('external-link', 15) . $t('vibe_open') . '</a></div>'
+                : '';
+        }
 
         return '<div class="bcp-shell"><style>'
             . Assets::css()
             . '</style>'
             . '<div class="bcp-head">'
-            . Brand::logo(24)
+            . ($isVibe ? Brand::vibeLogo(24) : Brand::logo(24))
             . '<span class="bcp-badge ' . $bv . '">'
             . $h($statusLabel) . '</span>'
             . '</div>'
@@ -358,7 +384,7 @@ final class ClientPanel
             . ($domain !== ''
                 ? '<a href="' . $h($domainUrl) . '" target="_blank" '
                     . 'rel="noopener">' . $h($domain) . '</a>'
-                : $t('bladecp_service'))
+                : ($isVibe ? 'BladeCP Vibe' : $t('bladecp_service')))
             . '</strong>'
             . ($planLabel !== '' ? '<small>' . $h($planLabel) . '</small>' : '')
             . '</div>'

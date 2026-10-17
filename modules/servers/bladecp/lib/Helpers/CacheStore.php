@@ -32,12 +32,29 @@ final class CacheStore
      */
     public static function read(Client $client, string $name, int $ttl): ?array
     {
+        return self::readWithinAge($client, $name, $ttl);
+    }
+
+    /**
+     * Reads a cache entry beyond its fresh TTL for explicitly fail-soft
+     * consumers. Callers must use this only after a network failure.
+     *
+     * @return array<mixed>|null
+     */
+    public static function readStale(Client $client, string $name, int $maxAge): ?array
+    {
+        return self::readWithinAge($client, $name, $maxAge);
+    }
+
+    /** @return array<mixed>|null */
+    private static function readWithinAge(Client $client, string $name, int $maxAge): ?array
+    {
         $path = self::path($client, $name);
         if ($path === null || !is_file($path)) {
             return null;
         }
         $mtime = @filemtime($path);
-        if ($mtime === false || $ttl < 0 || time() - $mtime > $ttl) {
+        if ($mtime === false || $maxAge < 0 || time() - $mtime > $maxAge) {
             return null;
         }
         $raw = @file_get_contents($path);

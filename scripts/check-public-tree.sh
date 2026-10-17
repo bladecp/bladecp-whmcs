@@ -19,6 +19,7 @@ required=(
   modules/servers/bladecp/whmcs.json
   modules/addons/bladecp/bladecp.php
   modules/addons/bladecp/webhook.php
+  modules/addons/bladecp/cron.php
   tests/run.php
 )
 for path in "${required[@]}"; do
@@ -91,6 +92,34 @@ for raw_path in sys.argv[1:]:
         offset += length
 PY
 
+# README artwork: the brand marks plus, for each language, a wide and a compact
+# hero and architecture diagram. They are static vector files: GitHub shows
+# them through <img>, where scripts never run, and the public tree keeps them
+# free of active content and external references all the same.
+artwork=(assets/logo-dark.svg assets/logo-light.svg)
+for language in "${screenshot_languages[@]}"; do
+  for name in hero hero-compact architecture architecture-compact; do
+    artwork+=("assets/$name.$language.svg")
+  done
+done
+for path in "${artwork[@]}"; do
+  [ -f "$path" ] || { echo "error: required README artwork is missing: $path" >&2; exit 1; }
+done
+actual_artwork="$(find assets -maxdepth 1 -type f -name '*.svg' -print | sed 's#^./##' | sort)"
+expected_artwork="$(printf '%s\n' "${artwork[@]}" | sort)"
+if [ "$actual_artwork" != "$expected_artwork" ]; then
+  echo "error: the public tree must contain exactly the approved README artwork" >&2
+  echo "expected:" >&2
+  printf '%s\n' "$expected_artwork" >&2
+  echo "actual:" >&2
+  printf '%s\n' "$actual_artwork" >&2
+  exit 1
+fi
+if grep -InE '<(script|foreignObject|image|iframe|embed|object)[[:space:]>/]|[[:space:]]on[a-z]+[[:space:]]*=|(href|src)[[:space:]]*=[[:space:]]*["'\''](https?:|data:|//)|url\([[:space:]]*["'\'']?(https?:|data:|//)|@import' "${artwork[@]}"; then
+  echo "error: README artwork must not contain scripts, embedded content or external references" >&2
+  exit 1
+fi
+
 if find . -type l -print -quit | grep -q .; then
   echo "error: symbolic links are not allowed in the public tree" >&2
   find . -type l -print >&2
@@ -106,8 +135,8 @@ fi
 # Public prose and image metadata must never point readers to an unpublished
 # environment. The module code may retain sandbox support, but public docs and
 # screenshots are production-only.
-documentation_files=(README.md README.pt-BR.md README.es.md CHANGELOG.md SECURITY.md CONTRIBUTING.md docs assets/screenshots/README.md)
-if grep -RIniE --exclude-dir=.git '(api\\.bladecp\\.cloud|sandbox|valuehost|ulisses)' "${documentation_files[@]}"; then
+documentation_files=(README.md README.pt-BR.md README.es.md CHANGELOG.md SECURITY.md CONTRIBUTING.md docs assets/screenshots/README.md "${artwork[@]}")
+if grep -RIniE --exclude-dir=.git '(api\.bladecp\.cloud|sandbox|valuehost|ulisses)' "${documentation_files[@]}"; then
   echo "error: public documentation contains a prohibited environment, third-party, or personal reference" >&2
   exit 1
 fi

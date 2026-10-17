@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WHMCS\Module\Server\Bladecp\Functions\Stack;
 
 use WHMCS\Module\Server\Bladecp\Helpers\ClientLocale;
+use WHMCS\Module\Server\Bladecp\Helpers\ProductType;
 use WHMCS\Module\Server\Bladecp\Helpers\ProvisionView;
 
 if (!defined('WHMCS')) {
@@ -23,7 +24,7 @@ final class ClientArea
         try {
             $session = is_array($_SESSION ?? null) ? $_SESSION : [];
             $html = \WHMCS\Module\Server\Bladecp\Ui\ClientPanel::render(
-                $data,
+                $data + self::panelAccess($params),
                 ClientLocale::resolve($params, $session)
             );
         } catch (\Throwable) {
@@ -41,5 +42,23 @@ final class ClientArea
             'vars' => $vars,
             'templateVariables' => $vars,
         ];
+    }
+
+    /**
+     * Hosting services open the control panel through the native single
+     * sign-on action; other types share this area without it. An unknown
+     * type only hides the button.
+     *
+     * @return array{serviceId?:int,panelAccess?:bool}
+     */
+    private static function panelAccess(array $params): array
+    {
+        try {
+            return ProductType::getFromParams($params) === ProductType::STACK_CONTAINER
+                ? ['serviceId' => (int) ($params['serviceid'] ?? 0), 'panelAccess' => true]
+                : [];
+        } catch (\Throwable) {
+            return [];
+        }
     }
 }

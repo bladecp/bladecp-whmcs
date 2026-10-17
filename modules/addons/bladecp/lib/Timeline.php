@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace WHMCS\Module\Addon\Bladecp;
 
+use WHMCS\Module\Addon\Bladecp\Admin\I18n;
+
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
 }
@@ -50,7 +52,7 @@ final class Timeline
             $items[] = [
                 'at' => (string) ($entry['at'] ?? ''),
                 'kind' => (string) ($entry['status'] ?? 'recorded'),
-                'title' => (string) ($entry['action'] ?? 'Ação BladeCP'),
+                'title' => (string) ($entry['action'] ?? I18n::t('admin.operation.default_action')),
                 'detail' => (string) ($entry['message'] ?? ''),
             ];
             if (count($items) >= $limit) {

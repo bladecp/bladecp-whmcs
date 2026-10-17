@@ -9,6 +9,7 @@ use WHMCS\Module\Server\Bladecp\Api\Client;
 use WHMCS\Module\Server\Bladecp\Api\OptionCatalog;
 use WHMCS\Module\Server\Bladecp\Config\Loaders;
 use WHMCS\Module\Server\Bladecp\Helpers\ComboResolver;
+use WHMCS\Module\Server\Bladecp\Helpers\ComponentAvailability;
 use WHMCS\Module\Server\Bladecp\Helpers\ComponentRef;
 use WHMCS\Module\Server\Bladecp\Helpers\Logger;
 use WHMCS\Module\Server\Bladecp\Helpers\OptionsMapper;
@@ -26,6 +27,10 @@ final class CreateAccount
 {
     public static function run(array $params): string
     {
+        $migration = \WHMCS\Module\Server\Bladecp\Helpers\FastDeployProvisionGuard::check($params);
+        if ($migration !== null) {
+            return $migration;
+        }
         $client = Client::fromParams($params);
 
         $opts = is_array($params['configoptions'] ?? null)
@@ -90,6 +95,33 @@ final class CreateAccount
                 ParamsMapper::orderFormSlugs($opts, $rich, []),
                 ParamsMapper::componentsFromParams($params)
             );
+        }
+        // A category choice that no longer matches the catalog would be
+        // dropped by orderFormSlugs and the service created without it.
+        if ($activeCombo === [] && $rich !== []) {
+            $categoryNames = ComponentAvailability::groupCategoryNames();
+            if ($categoryNames !== null) {
+                $dropped = ComponentAvailability::unavailableSelections($opts, $categoryNames, $rich);
+                if ($dropped !== []) {
+                    $parts = [];
+                    foreach ($dropped as $category => $label) {
+                        $parts[] = $label . ' (' . $category . ')';
+                    }
+                    return 'BladeCP: opção fora do catálogo atual: ' . implode(', ', $parts)
+                        . '. Ajuste as opções configuráveis do serviço antes de provisionar.';
+                }
+            }
+        }
+        if ($selected !== [] && $rich !== []) {
+            $unavailable = ComponentAvailability::unavailableTokens(
+                $selected,
+                ComponentAvailability::index($rich)
+            );
+            if ($unavailable !== []) {
+                return 'BladeCP: componente(s) fora do catálogo atual: '
+                    . implode(', ', $unavailable)
+                    . '. Confira o combo escolhido ou atribuído ao produto e o ConfigOption "BladeCP Components".';
+            }
         }
         if ($selected !== []) {
             $catalog = Catalog::slugsFor($client);

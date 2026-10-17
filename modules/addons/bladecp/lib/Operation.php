@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace WHMCS\Module\Addon\Bladecp;
 
+use WHMCS\Module\Addon\Bladecp\Admin\I18n;
+
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
 }
@@ -257,11 +259,11 @@ final class Operation
                 }
                 $out[] = [
                     'at' => self::date((string) ($row->date ?? '')),
-                    'action' => $action !== '' ? $action : 'Ação BladeCP',
+                    'action' => $action !== '' ? $action : I18n::t('admin.operation.default_action'),
                     'status' => $failed ? 'failed' : 'recorded',
                     'message' => $failed
-                        ? 'Falha registrada. Consulte o log do módulo para os detalhes técnicos.'
-                        : 'Ação registrada pelo módulo.',
+                        ? I18n::t('admin.operation.failure_recorded')
+                        : I18n::t('admin.operation.action_recorded'),
                 ];
                 if (count($out) >= $limit) {
                     break;

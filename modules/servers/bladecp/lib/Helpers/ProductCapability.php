@@ -12,10 +12,8 @@ if (!defined('WHMCS')) {
  * Canonical product capability policy for the WHMCS module.
  *
  * A product type can be recognized for compatibility without being
- * configurable for new products. Vibe is an independent BladeCP product and
- * its services are not provisioned by this module. Handlers are deliberately
- * listed per operation so routing never falls back to a neighbouring product
- * type.
+ * configurable for new products. Handlers are deliberately listed per
+ * operation so routing never falls back to a neighbouring product type.
  */
 final class ProductCapability
 {
@@ -73,10 +71,22 @@ final class ProductCapability
             ],
         ],
         ProductType::VIBE => [
-            'namespace' => null,
-            'configurable' => false,
-            'legacy' => true,
-            'operations' => [],
+            // Vibe has its own Customer API account resource. Keep every
+            // operation explicit so it can never fall back to provisioning.
+            'namespace' => 'Vibe',
+            'configurable' => true,
+            'legacy' => false,
+            'operations' => [
+                'CreateAccount',
+                'SuspendAccount',
+                'UnsuspendAccount',
+                'TerminateAccount',
+                'ChangePackage',
+                'CancelAtCycleEnd',
+                'CancelNow',
+                'ServiceSingleSignOn',
+                'ClientArea',
+            ],
         ],
     ];
 

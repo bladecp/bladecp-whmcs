@@ -2,15 +2,15 @@
 
 This document describes the intended governance for the public `bladecp/bladecp-whmcs` repository. It is a recommendation for the repository owners to apply. It does not claim that any GitHub setting has already been enabled.
 
-## Source of record and public collaboration
+## Public collaboration
 
-The private Bitbucket repository is the primary source of development. The public GitHub repository receives curated exports and keeps an independent, reviewable public history.
+The public GitHub repository keeps a focused, reviewable history of the module and its published releases.
 
-Public issues and pull requests are welcome. Maintainers review them in GitHub for transparency. When a public contribution is approved, its change is first imported into the private source repository, where it follows the normal validation process. A later curated export returns that approved change to the public repository.
+Public issues and pull requests are welcome. Maintainers review them in GitHub for transparency. An approved contribution follows the complete validation and release process before it appears in a published package.
 
-This direction prevents the public repository from becoming a second, inconsistent source of truth. It also keeps sensitive development material out of public history. Do not expect a merged public pull request to appear in a release until it has completed this import and export cycle.
+Do not expect a merged public pull request to appear in a release until it has completed that validation and release cycle.
 
-After the first public release, history remains normal and append-only. Do not rewrite public commits, mirror private history, or force-push public branches.
+After the first public release, history remains normal and append-only. Do not rewrite public commits or force-push public branches.
 
 ## Recommended GitHub settings
 
@@ -31,7 +31,7 @@ Use the issue templates for bugs and feature requests. A good report states the 
 
 Never include API keys, passwords, webhook signing secrets, customer records, private addresses, service identifiers, full logs or screenshots containing sensitive information. Use the private process in [SECURITY.md](../SECURITY.md) for vulnerabilities.
 
-Pull requests should be focused, explain the user-facing outcome and include appropriate tests or manual validation notes. Maintainers may request that a public contribution be recreated from the private source before it can be exported.
+Pull requests should be focused, explain the user-facing outcome and include appropriate tests or manual validation notes. Maintainers may request adjustments before a contribution can be included in a release.
 
 ## Releases
 

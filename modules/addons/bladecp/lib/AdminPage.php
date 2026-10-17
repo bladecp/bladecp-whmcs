@@ -50,8 +50,11 @@ final class AdminPage
         }
 
         $body = match ($action) {
+            'vibe-support' => self::vibeSupportView($base),
             'overview' => self::overviewView($base),
             'setup' => self::setupView($base),
+            'client-experience' => Admin\ClientExperienceView::render($base),
+            'migration-review' => Admin\MigrationReviewView::render($base),
             'planos' => self::plansView($base),
             'new', 'edit' => self::formView($base, $pid),
             'pricing' => self::pricingView($base, $pid),
@@ -65,6 +68,7 @@ final class AdminPage
             'webhooks' => self::webhooksView($base),
             'operation' => self::operationView($base),
             'diagnostics' => self::diagnosticsView($base),
+            'about' => About::render($base),
             'combos' => self::listView($base, $pid),
             // Abrir o addon mostra o panorama e o roteiro de primeiro uso.
             // Aberto de um produto (?pid=) mantém os Combos daquele produto.
@@ -73,7 +77,7 @@ final class AdminPage
 
         // Alertas de configuração continuam globais até existir um contexto
         // válido. O resumo do servidor configurado pertence à Visão geral.
-        if ($action !== 'setup') {
+        if (!in_array($action, ['setup', 'about'], true)) {
             $body = self::setupBanner($base) . $body;
         }
 
@@ -82,13 +86,27 @@ final class AdminPage
 
     // ── Views ──
 
+    private static function vibeSupportView(string $base, ?string $serviceId = null, string $error = ''): string
+    {
+        $serviceId ??= (string) ($_GET['serviceid'] ?? $_GET['service'] ?? '');
+        $body = VibeSupportLaunch::render($base, $serviceId, $error);
+        if ($body === '') {
+            $body = '<p class="bcp-row-v">' . self::e(I18n::t('admin.vibe_support.select')) . '</p>';
+        }
+        return self::card(
+            self::header(I18n::t('admin.vibe_support.title'), I18n::t('admin.vibe_support.subtitle')),
+            $body
+        );
+    }
+
     /**
      * Página inicial orientada à operação. Não toma decisões de catálogo:
      * apenas traduz sinais já disponíveis em próximos passos claros.
      */
     private static function overviewView(string $base): string
     {
-        $server = ServerConfig::params();
+        $connectionHealth = Setup::currentConnectionHealth();
+        $connectionState = (string) ($connectionHealth['state'] ?? 'unavailable');
         $plans = PlanSync::plans();
         $componentGroup = ConfigurableOptions::groupId(false);
         $webhookSource = WebhookConfig::secretSource();
@@ -101,22 +119,40 @@ final class AdminPage
             ['snapshot', 'summary', 'inspect', 'load']
         );
 
-        $connected = $server !== null;
+        $connected = $connectionState === 'valid';
+        $configured = $connectionState !== 'unconfigured';
         $catalogReady = $plans !== [];
         $componentsReady = $componentGroup !== null;
         $webhookReady = $webhookSource !== 'none';
         $readyCount = ($connected ? 1 : 0) + ($catalogReady ? 1 : 0)
             + ($componentsReady ? 1 : 0) + ($webhookReady ? 1 : 0);
 
+        $connectionStatusKey = match ($connectionState) {
+            'valid' => 'admin.overview.ready',
+            'rejected' => 'admin.overview.rejected',
+            'unavailable' => 'admin.overview.unavailable',
+            default => 'admin.overview.pending',
+        };
+        $connectionDetailKey = match ($connectionState) {
+            'valid' => 'admin.overview.connection_ready',
+            'rejected' => 'admin.overview.connection_rejected',
+            'unavailable' => 'admin.overview.connection_unavailable',
+            default => 'admin.overview.connection_pending',
+        };
+        $connectionTone = match ($connectionState) {
+            'valid' => 'ok',
+            'rejected' => 'danger',
+            default => 'warn',
+        };
         $statusCards = self::overviewStatusCard(
             I18n::t('admin.overview.connection'),
-            $connected ? I18n::t('admin.overview.ready') : I18n::t('admin.overview.pending'),
-            $connected
-                ? I18n::t('admin.overview.connection_ready')
-                : I18n::t('admin.overview.connection_pending'),
+            I18n::t($connectionStatusKey),
+            I18n::t($connectionDetailKey),
             $base . '&action=setup',
-            $connected ? I18n::t('admin.overview.view_configuration') : I18n::t('admin.overview.configure_connection'),
-            $connected ? 'ok' : 'warn'
+            $configured
+                ? I18n::t('admin.overview.view_configuration')
+                : I18n::t('admin.overview.configure_connection'),
+            $connectionTone
         );
         $statusCards .= self::overviewStatusCard(
             I18n::t('admin.overview.catalog'),
@@ -562,7 +598,7 @@ final class AdminPage
         }
         if (isset($_GET['blocked']) && (int) $_GET['blocked'] > 0) {
             $n = (int) $_GET['blocked'];
-            $flash .= '<div class="bcp-badge is-warn">' . $n
+            $flash .= '<div class="bcp-badge is-warn">'
                 . self::e(I18n::t('admin.plans.blocked_import', ['count' => $n])) . '</div>';
         }
         if (isset($_GET['reordered'])) {
@@ -638,7 +674,10 @@ final class AdminPage
                 $blocked++;
             } elseif ($pidP === 0) {
                 $missing++;
-            } elseif (!isset($linkedPids[$pidP])) {
+            } elseif (
+                PlanSync::usesConfigurableOptions((string) ($p['type'] ?? ''))
+                && !isset($linkedPids[$pidP])
+            ) {
                 $unlinked++;
             }
         }
@@ -661,7 +700,7 @@ final class AdminPage
             $actions .= '<span class="bcp-badge is-ok">' . self::e(I18n::t('admin.plans.all_imported')) . '</span>';
         }
         if ($blocked > 0) {
-            $actions .= ' <span class="bcp-badge is-warn">' . $blocked
+            $actions .= ' <span class="bcp-badge is-warn">'
                 . self::e(I18n::t('admin.plans.blocked_contract', ['count' => $blocked])) . '</span>';
         }
         $actions .= ' <form method="post" action="' . self::e($base) . '" style="display:inline">'
@@ -681,6 +720,14 @@ final class AdminPage
                 . '<button class="btn btn-default" type="submit">' . self::ic('plug')
                 . self::e(I18n::t('admin.plans.link_components', ['count' => $unlinked])) . '</button></form>';
         }
+        if (array_filter($plans, static fn ($plan) => $plan['type'] === 'vibe') !== []) {
+            $actions .= '<form method="post" action="' . self::e($base) . '">'
+                . self::token() . '<input type="hidden" name="action" value="vibe-catalog-sync">'
+                . '<button class="btn btn-default" type="submit">' . self::e(I18n::t('admin.vibe.sync')) . '</button></form>';
+            $context = AdminServerContext::resolve();
+            $attempt = VibeCommercialCatalog::lastAttemptForServer((int) ($context['serverId'] ?? 0));
+            $actions .= \WHMCS\Module\Addon\Bladecp\Admin\VibeCatalogDiagnostics::attempt($attempt);
+        }
         $actions .= '</div>';
 
         $tables = '';
@@ -689,8 +736,12 @@ final class AdminPage
             foreach ($rows as $p) {
                 $created = isset($existing[$p['id']]);
                 $name = '<strong>' . self::e($p['name']) . '</strong>';
+                $description = $p['desc'] !== '' ? self::e($p['desc']) : '';
+                if ($p['type'] === 'vibe') {
+                    $description .= \WHMCS\Module\Addon\Bladecp\Admin\VibeCatalogDiagnostics::plan($p['vibeDiagnostics'] ?? [], (int) ($existing[$p['id']] ?? 0), $p['vibePlanTier'] ?? 'unknown');
+                }
                 $tr .= '<tr><td>' . $name . '</td>'
-                    . '<td>' . ($p['desc'] !== '' ? self::e($p['desc']) : '—') . '</td>'
+                    . '<td>' . ($description !== '' ? $description : '—') . '</td>'
                     . self::planStatusCell(
                         $p,
                         $created,
@@ -702,7 +753,7 @@ final class AdminPage
             $tables .= '<h4 class="bcp-setup-h" style="margin:18px 0 8px">'
                 . self::e($group) . '</h4>'
                 . self::planGroupNotice($rows)
-                . '<div class="bcp-tbl-wrap"><table class="bcp-tbl bcp-plans"><thead><tr><th scope="col">' . self::e(I18n::t('admin.common.plan')) . '</th><th scope="col">' . self::e(I18n::t('admin.plans.resources')) . '</th>'
+                . '<div class="bcp-tbl-wrap"><table class="bcp-tbl bcp-plans"><thead><tr><th scope="col">' . self::e(I18n::t('admin.common.plan')) . '</th><th scope="col">' . self::e(I18n::t(($rows[0]['type'] ?? '') === 'vibe' ? 'admin.vibe.details' : 'admin.plans.resources')) . '</th>'
                 . '<th scope="col" style="text-align:right">' . self::e(I18n::t('admin.common.status')) . '</th></tr></thead><tbody>'
                 . $tr . '</tbody></table></div>';
         }
@@ -871,12 +922,23 @@ final class AdminPage
             }
         }
 
+        // Combos with a component that left the catalog are kept out of the
+        // order form by the sync; say so here, where they are edited.
+        $unavailable = ConfigurableOptions::unavailableCombos($combos, $catalog);
+
         $rows = '';
         foreach ($combos as $c) {
             $chips = '';
+            $offSale = $unavailable[$c['name']] ?? [];
             foreach ($c['components'] as $s) {
                 $r = ComponentRef::parse((string) $s);
                 $slug = $r['slug'];
+                if (in_array((string) $s, $offSale, true)) {
+                    $chips .= '<span class="bcp-pill off">'
+                        . self::e(($cName[$slug] ?? $slug) . ' · ' . I18n::t('admin.combos.component_unavailable'))
+                        . '</span> ';
+                    continue;
+                }
                 $name = $cName[$slug] ?? '';
                 $vlbl = ($r['version'] !== null
                     && isset($cVer[$slug][$r['version']]))
@@ -896,6 +958,9 @@ final class AdminPage
                     . '</span> ';
             }
             $rows .= '<tr><td><strong>' . self::e($c['name']) . '</strong>'
+                . ($offSale !== []
+                    ? ' <span class="bcp-pill off">' . self::e(I18n::t('admin.combos.off_sale')) . '</span>'
+                    : '')
                 . '<div class="bcp-csub">' . self::e($c['slug'])
                 . '</div></td><td>' . ($chips !== '' ? $chips : '—')
                 . '</td><td style="text-align:right;white-space:nowrap">'
@@ -1200,6 +1265,24 @@ final class AdminPage
         }
     }
 
+    /**
+     * Pushes the current Vibe catalog after an administrator changes products
+     * or prices. The daily cron remains the retry path, so a transient API
+     * failure must never roll back the completed WHMCS operation.
+     */
+    private static function syncVibeCommercialCatalog(): void
+    {
+        try {
+            $context = AdminServerContext::resolve();
+            $serverId = (int) ($context['serverId'] ?? 0);
+            if (($context['state'] ?? '') === 'configured' && $serverId > 0) {
+                VibeCommercialCatalog::syncForServer($serverId);
+            }
+        } catch (\Throwable) {
+            // DailyCronJob retries the authoritative snapshot.
+        }
+    }
+
     private static function money(float $v, string $code): string
     {
         return self::e($code . ' ' . number_format($v, 2, ',', '.'));
@@ -1407,7 +1490,9 @@ final class AdminPage
                 . self::e(I18n::t('admin.common.back_to_product')) . '</a></div>'
             : '';
 
-        [$catalog, $catOk] = self::catalog();
+        // Fresh: this screen decides what goes on sale, so it must not
+        // rely on a catalog cached before a component was withdrawn.
+        [$catalog, $catOk] = self::catalog(true);
         if (!$catOk || $catalog === []) {
             return self::card($h, self::tabs($base, 'sync')
                 . '<p class="bcp-row-v">' . self::e(I18n::t('admin.orderform.catalog_unavailable')) . '</p>' . $back);
@@ -1420,17 +1505,19 @@ final class AdminPage
             $combos,
             $locations
         );
-        $desiredNames = array_map(
-            static fn ($o) => $o['name'],
-            $spec['options']
-        );
         $current = ConfigurableOptions::currentOptionNames();
-        $d = ConfigurableOptions::diffSpec($desiredNames, $current);
+        $d = ConfigurableOptions::choiceDiff(
+            $spec,
+            ConfigurableOptions::currentVisibleChoices()
+        );
+        $unavailableCombos = ConfigurableOptions::unavailableCombos($combos, $catalog);
         $linked = $pid > 0 && ConfigurableOptions::isLinked($pid);
 
         $banner = '';
         if (isset($_GET['done'])) {
             $banner = '<div class="bcp-badge is-ok">' . self::e(I18n::t('admin.orderform.synced')) . '</div>';
+        } elseif (isset($_GET['failed'])) {
+            $banner = '<div class="bcp-badge is-err">' . self::e(I18n::t('admin.orderform.sync_failed')) . '</div>';
         } elseif (isset($_GET['removed'])) {
             $banner = '<div class="bcp-badge is-warn">' . self::e(I18n::t('admin.orderform.removed')) . '</div>';
         }
@@ -1441,27 +1528,28 @@ final class AdminPage
         if ($missCur !== []) {
             $banner .= '<div class="bcp-badge is-err">' . self::e(I18n::t('admin.orderform.missing_prices', ['count' => count($missCur), 'currencies' => implode(', ', $missCur)])) . '</div>';
         }
-
-        // nome do componente → categoria (p/ agrupar o diff).
-        $nameCat = [];
-        foreach ($catalog as $it) {
-            $n = trim((string) ($it['name'] ?? ''));
-            if ($n !== '') {
-                $nameCat[$n] = trim((string) ($it['category'] ?? I18n::t('admin.common.other')))
-                    ?: I18n::t('admin.common.other');
-            }
+        if ($unavailableCombos !== []) {
+            $banner .= '<div class="bcp-badge is-warn">' . self::e(I18n::t('admin.orderform.combos_unavailable', [
+                'combos' => implode(', ', array_keys($unavailableCombos)),
+            ])) . ' <a href="' . self::e($base) . '&action=combos">'
+                . self::e(I18n::t('admin.orderform.review_combos')) . '</a></div>';
         }
-        // lista de nomes → badges Bootstrap AGRUPADOS por categoria.
-        $grouped = static function (array $xs) use ($nameCat): string {
-            if ($xs === []) {
+
+        $count = static function (array $byOption): int {
+            $n = 0;
+            foreach ($byOption as $labels) {
+                $n += count($labels);
+            }
+            return $n;
+        };
+        // optionName => labels → badges grouped by option, Combo first.
+        $grouped = static function (array $byCat): string {
+            if ($byCat === []) {
                 return '<span class="bcp-row-v muted">—</span>';
             }
-            $byCat = [];
-            foreach ($xs as $x) {
-                $byCat[$nameCat[$x] ?? I18n::t('admin.common.other')][] = $x;
-            }
             uksort($byCat, static fn ($a, $b): int =>
-                SelectionRules::categoryRank((string) $a)
+                (($a === ConfigurableOptions::COMBO_OPTION ? 0 : 1) <=> ($b === ConfigurableOptions::COMBO_OPTION ? 0 : 1))
+                ?: SelectionRules::categoryRank((string) $a)
                     <=> SelectionRules::categoryRank((string) $b)
                 ?: strcasecmp((string) $a, (string) $b));
             $o = '';
@@ -1494,10 +1582,11 @@ final class AdminPage
                 : '');
 
         $preview = '<div class="bcp-sec">' . self::e(I18n::t('admin.orderform.preview')) . '</div>'
-            . '<div class="bcp-difb"><strong>' . self::e(I18n::t('admin.orderform.add', ['count' => count($d['add'])])) . '</strong>' . $grouped($d['add'])
-            . '</div><div class="bcp-difb"><strong>' . self::e(I18n::t('admin.orderform.keep', ['count' => count($d['keep'])])) . '</strong>' . $grouped($d['keep'])
-            . '</div><div class="bcp-difb"><strong>' . self::e(I18n::t('admin.orderform.remove', ['count' => count($d['remove'])])) . '</strong>'
-            . $grouped($d['remove']) . '</div>';
+            . '<div class="bcp-difb"><strong>' . self::e(I18n::t('admin.orderform.add', ['count' => $count($d['add'])])) . '</strong>' . $grouped($d['add'])
+            . '</div><div class="bcp-difb"><strong>' . self::e(I18n::t('admin.orderform.remove', ['count' => $count($d['remove'])])) . '</strong>'
+            . $grouped($d['remove'])
+            . '</div><div class="bcp-difb"><strong>' . self::e(I18n::t('admin.orderform.keep', ['count' => $count($d['keep'])])) . '</strong>' . $grouped($d['keep'])
+            . '</div>';
 
         // ATENÇÃO: forms NÃO podem aninhar (HTML inválido — o browser
         // quebra e o submit dispara a action errada). apply e remove
@@ -1811,7 +1900,24 @@ final class AdminPage
         $context = AdminServerContext::resolve();
         $state = (string) ($context['state'] ?? 'missing');
         if ($state === 'configured') {
-            return '';
+            $connectionState = (string) (
+                Setup::currentConnectionHealth()['state'] ?? 'unavailable'
+            );
+            if ($connectionState === 'valid') {
+                return '';
+            }
+            $rejected = $connectionState === 'rejected';
+            $label = I18n::t($rejected
+                ? 'admin.setup.connection_rejected'
+                : 'admin.setup.connection_unavailable');
+            return '<div class="bcp-flash '
+                . ($rejected ? 'bcp-flash-no' : 'bcp-flash-warn')
+                . '"><div><strong>' . self::e($label)
+                . '</strong></div><a class="btn btn-primary" href="'
+                . self::e($base . '&action=setup') . '">'
+                . self::ic($rejected ? 'pencil' : 'refresh')
+                . self::e(I18n::t('admin.overview.view_configuration'))
+                . '</a></div>';
         }
 
         $label = $state === 'ambiguous'
@@ -1886,18 +1992,14 @@ final class AdminPage
         }
 
         $key = trim((string) ($params['serveraccesshash'] ?? ''));
-        $host = trim((string) ($params['serverhostname'] ?? ''));
         if ($key === '') {
             return self::shell(self::setupView(
                 $base,
                 I18n::t('admin.setup.invalid_credential')
             ));
         }
-        if ($host === '') {
-            $host = Setup::HOST_PRODUCTION;
-        }
 
-        $validation = Setup::validate($key, $host);
+        $validation = Setup::currentConnectionHealth(true);
         if (!$validation['ok']) {
             return self::shell(self::setupView(
                 $base,
@@ -1918,11 +2020,34 @@ final class AdminPage
 
     private static function handlePost(string $base, string $action, int $pid): string
     {
+        if ($action === 'client-experience-save') {
+            $error = Admin\ClientExperienceView::save();
+            return $error === ''
+                ? self::redirect($base . '&action=client-experience&saved=1')
+                : self::shell(Admin\ClientExperienceView::render($base, $error));
+        }
         if (!self::checkToken()) {
             return self::shell(self::card(
                 self::header(I18n::t('admin.common.session_expired'), ''),
                 '<p class="bcp-row-v">' . self::e(I18n::t('admin.common.invalid_token')) . ' <a href="' . self::e($base) . '">' . self::e(I18n::t('admin.common.back')) . '</a>.</p>'
             ));
+        }
+        if (str_starts_with($action, 'module-cron-')) {
+            return self::redirect($base . '&action=diagnostics' . Admin\ModuleCronView::handle($action) . '#bcp-module-cron');
+        }
+        if (str_starts_with($action, 'migration-review-')) {
+            return self::redirect($base . '&action=migration-review' . Admin\MigrationReviewView::handle($action));
+        }
+        if ($action === 'vibe-support-launch') {
+            $issued = VibeSupportLaunch::issue($_POST['serviceid'] ?? null);
+            if (($issued['ok'] ?? false) === true && is_string($issued['authorizeUrl'] ?? null)) {
+                return VibeSupportLaunch::redirect($issued['authorizeUrl']);
+            }
+            return self::shell(self::vibeSupportView($base, (string) ($_POST['serviceid'] ?? ''), (string) ($issued['error'] ?? ClientCopy::text('client-flows', 'support_access_unprepared'))));
+        }
+        if (str_starts_with($action, 'federation-')) {
+            $ok = \WHMCS\Module\Addon\Bladecp\Admin\FederationView::handle(substr($action, 11));
+            return self::shell(SetupView::render($base, '', false, $ok ? 'federation.saved' : 'federation.failed'));
         }
         if ($action === 'admin-server-select') {
             $selected = (int) ($_POST['server_id'] ?? -1);
@@ -2024,6 +2149,7 @@ final class AdminPage
             return self::redirect($to);
         } elseif ($action === 'pricing-apply') {
             self::applyPricing($pid);
+            self::syncVibeCommercialCatalog();
             $to = $base . '&action=pricing&pid=' . $pid . '&done=1';
             return self::redirect($to);
         } elseif ($action === 'prices-sync') {
@@ -2042,10 +2168,16 @@ final class AdminPage
             foreach ($ids as $n) {
                 self::applyPricing($n);
             }
+            self::syncVibeCommercialCatalog();
             $to = $base . '&action=prices&synced=' . count($ids);
             return self::redirect($to);
         } elseif ($action === 'orderform-apply') {
-            [$catalog, ] = self::catalog();
+            [$catalog, $catOk] = self::catalog(true);
+            if (!$catOk || $catalog === []) {
+                // Applying an empty catalog would hide every choice.
+                return self::redirect($base . '&action=orderform'
+                    . ($pid > 0 ? '&pid=' . $pid : '') . '&failed=1');
+            }
             ConfigurableOptions::apply(
                 $catalog,
                 Combos::all(),
@@ -2121,22 +2253,31 @@ final class AdminPage
         } elseif ($action === 'plan-import') {
             $planId = trim((string) ($_POST['plan'] ?? ''));
             $n = 0;
+            $imported = false;
             foreach (PlanSync::plans() as $p) {
                 if ((string) $p['id'] === $planId) {
                     $r = PlanSync::importPlan($p, Combos::importComboId());
+                    $imported = ($r['ok'] ?? false) === true;
                     $n = ($r['ok'] && $r['mode'] === 'created') ? 1 : 0;
                     break;
                 }
             }
+            if ($imported) {
+                self::syncVibeCommercialCatalog();
+            }
             return self::redirect($base . '&action=planos&imported=' . $n);
         } elseif ($action === 'plans-import-all') {
             $sum = PlanSync::importMissing(Combos::importComboId());
+            self::syncVibeCommercialCatalog();
             return self::redirect(
                 $base . '&action=planos&imported=' . $sum['created']
                     . '&blocked=' . ($sum['skipped'] ?? 0)
             );
         } elseif ($action === 'plans-reorder') {
             return self::redirect($base . '&action=planos&reordered=' . PlanSync::reorder());
+        } elseif ($action === 'vibe-catalog-sync') {
+            self::syncVibeCommercialCatalog();
+            return self::redirect($base . '&action=planos');
         } elseif ($action === 'catalog-reconcile') {
             // O wrapper resolve o contexto administrativo e o server group
             // correspondente. A tela nunca pode reconciliar o catálogo de
@@ -2213,7 +2354,7 @@ final class AdminPage
     // ── Helpers ──
 
     /** @return array{0:array,1:bool} catálogo + ok */
-    private static function catalog(): array
+    private static function catalog(bool $fresh = false): array
     {
         try {
             if (!class_exists(ServerConfig::class)) {
@@ -2223,7 +2364,7 @@ final class AdminPage
             if ($client === null) {
                 return [[], false];
             }
-            $rows = Catalog::catalog($client);
+            $rows = Catalog::catalog($client, $fresh);
             return [$rows ?? [], $rows !== null];
         } catch (\Throwable) {
             return [[], false];

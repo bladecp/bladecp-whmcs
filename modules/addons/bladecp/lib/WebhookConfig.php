@@ -41,6 +41,8 @@ if (!defined('WHMCS')) {
  */
 final class WebhookConfig
 {
+    private const RECEIVER_PATH = '/modules/addons/bladecp/webhook.php';
+
     public const MODULE = 'bladecp';
     public const SETTING_SECRET = 'webhook_secret';
     public const SETTING_ENDPOINT_ID = 'webhook_endpoint_id';
@@ -53,6 +55,11 @@ final class WebhookConfig
         'provision.unsuspended',
         'provision.terminated',
         'provision.status.changed',
+        'vibe.account.activated',
+        'vibe.account.plan_changed',
+        'vibe.account.suspended',
+        'vibe.account.reactivated',
+        'vibe.account.terminated',
     ];
 
     // ── leitura usada pelo webhook.php ──
@@ -252,7 +259,9 @@ final class WebhookConfig
             || $host === ''
             || isset($parts['user'])
             || isset($parts['pass'])
+            || isset($parts['query'])
             || isset($parts['fragment'])
+            || str_contains($url, '?')
         ) {
             return self::blockedUrl(I18n::t('viewmodels.webhookConfig.invalidHttpUrlDetail'));
         }
@@ -950,7 +959,21 @@ final class WebhookConfig
 
     private static function isReceiverPath(string $path): bool
     {
-        return rtrim($path, '/') === '/modules/addons/bladecp/webhook.php';
+        if ($path === ''
+            || !str_starts_with($path, '/')
+            || str_contains($path, '\\')
+            || str_contains($path, '%')
+            || str_contains($path, '//')) {
+            return false;
+        }
+
+        foreach (explode('/', ltrim($path, '/')) as $segment) {
+            if ($segment === '' || $segment === '.' || $segment === '..') {
+                return false;
+            }
+        }
+
+        return str_ends_with($path, self::RECEIVER_PATH);
     }
 
     /** @return 'public'|'local'|'invalid' */

@@ -11,6 +11,9 @@ declare(strict_types=1);
  *   Header: X-Webhook-Id: <uuid do evento>   (idempotência)
  *   Body:   { "id", "type": "provision.suspended", "created",
  *             "data": { "provisionUuid": "...", "status": "suspended" } }
+ *           ou { "id", "type": "vibe.account.suspended", "created",
+ *             "data": { "accountId": "...", "status": "suspended",
+ *                       "resourceVersion": 2 } }
  *
  * A LÓGICA mora em `WebhookReceiver` (puro + testado) e `WebhookConfig`
  * (segredo + registro); aqui é só o transporte: bootstrap do WHMCS,
@@ -132,12 +135,16 @@ $event = $parsedEvent['event'];
 if ($event === null) {
     $respond(400, ['ok' => false, 'error' => $parsedEvent['error']]);
 }
+if (($event['accountId'] ?? null) !== null
+    && !hash_equals(WebhookConfig::getEndpointId($serverId), (string) ($event['endpointUuid'] ?? ''))) {
+    $respond(400, ['ok' => false, 'error' => 'invalid_vibe_endpoint']);
+}
 
 $claim = WebhookEventStore::claim(
     $serverId,
     $webhookId,
     (string) $event['event'],
-    (string) $event['provisionUuid'],
+    (string) $event['resourceId'],
     WebhookConfig::getEndpointId($serverId),
     $event['resourceVersion']
 );
@@ -166,7 +173,11 @@ if (function_exists('logModuleCall')) {
     logModuleCall(
         'bladecp',
         'WebhookReceiver',
-        ['event' => $event['event'], 'provisionUuid' => $event['provisionUuid']],
+        [
+            'event' => $event['event'],
+            'resourceId' => $event['resourceId'],
+            'resourceKind' => $event['accountId'] !== null ? 'vibe_account' : 'provision',
+        ],
         ['ok' => !empty($result['ok']), 'reason' => (string) ($result['reason'] ?? '')]
     );
 }

@@ -40,9 +40,15 @@ if (function_exists('add_hook')) {
                 ->whereIn('id', $productIds)
                 ->where('servertype', 'bladecp')
                 ->count();
-            return $matched > 0
-                ? ['Este produto BladeCP não pôde ter sua disponibilidade confirmada. Nenhuma cobrança ou provisão será iniciada.']
-                : [];
+            if ($matched === 0) {
+                return [];
+            }
+            try {
+                return [\WHMCS\Module\Server\Bladecp\Helpers\ClientText::get('cart_availability_unconfirmed')];
+            } catch (\Throwable) {
+                // Fail closed even when the message catalogue cannot load.
+                return ['The availability of this BladeCP product could not be confirmed. No charge or provisioning will start.'];
+            }
         } catch (\Throwable) {
             return [];
         }

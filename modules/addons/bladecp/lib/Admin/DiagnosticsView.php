@@ -31,7 +31,15 @@ final class DiagnosticsView
             . Layout::escape(I18n::t('diagnostics.hero.eyebrow')) . '</span>'
             . '<h4>' . Layout::escape(I18n::t('diagnostics.hero.title')) . '</h4><p>'
             . Layout::escape(I18n::t('diagnostics.hero.description')) . '</p></div>';
-        $body .= self::checks($base, $diagnostics) . self::readiness($base, $readiness);
+        $body .= self::checks($base, $diagnostics);
+        if (class_exists(ModuleCronView::class)) {
+            try {
+                $body .= ModuleCronView::render($base);
+            } catch (\Throwable) {
+                // The cron panel is informative and never hides the other checks.
+            }
+        }
+        $body .= self::readiness($base, $readiness);
         $body .= '<section class="bcp-glossary" aria-labelledby="bcp-glossary-title"><h4 id="bcp-glossary-title">'
             . Layout::escape(I18n::t('diagnostics.glossary.title')) . '</h4>'
             . '<dl><dt>' . Layout::escape(I18n::t('diagnostics.state.ready')) . '</dt><dd>'

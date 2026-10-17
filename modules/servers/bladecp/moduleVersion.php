@@ -6,7 +6,12 @@ if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
 }
 
-// A versão identifica o contrato público do módulo. A revisão é preenchida
-// pelo exportador com o commit exato usado para construir o pacote.
-$moduleVersion = '0.9.0-rc.4';
-$moduleRevision = '64732f5';
+// A versão identifica o contrato público do módulo. O checkout de
+// desenvolvimento nunca expõe sua revisão. O exportador materializa somente
+// a tag do pacote público aprovado.
+$moduleVersion = '0.9.0-rc.8';
+$publicReleaseTag = 'v0.9.0-rc.8';
+$distributionChannel = str_starts_with($publicReleaseTag, '@')
+    ? 'development'
+    : (str_contains($moduleVersion, '-') ? 'prerelease' : 'stable');
+$moduleRevision = null;
