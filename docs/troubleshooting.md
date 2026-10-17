@@ -38,9 +38,9 @@ if it may have been exposed.
 
 ## Usage is not updated
 
-Verify that WHMCS's normal daily cron is running successfully. The module
-uses that scheduler for usage updates; it does not provide a separate cron
-command.
+Verify that the standard WHMCS cron is running successfully. Usage updates
+come from its daily task, which calls the module for each server; the module
+cron does not run usage updates.
 
 ## Module cron stopped
 
@@ -91,7 +91,8 @@ synchronization details. These are separate requirements:
    Editing or submitting a profile for review does not prove that it is active.
 4. Import the available plan into this WHMCS, configure its price and make the
    product visible when ready for sale. Select **Sync Vibe offers**. The addon
-   also synchronizes after imports and price changes and retries on daily cron.
+   also synchronizes after imports and price changes and retries in the daily
+   synchronization of the module cron.
 
 Changing the handoff URL does not import products or refresh prices. A stale
 price requires a new accepted catalog snapshot. Synchronization acceptance

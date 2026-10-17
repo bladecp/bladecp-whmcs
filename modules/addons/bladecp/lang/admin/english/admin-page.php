@@ -155,7 +155,6 @@ return [
     'admin.components.label' => 'Components',
     'admin.components.catalog_detail' => 'BladeCP global catalog. The per-product allowlist is applied during provisioning.',
     'admin.server.default_name' => 'BladeCP server',
-    'admin.server.sandbox' => 'Sandbox',
     'admin.server.production' => 'Production',
     'admin.server.custom' => 'Custom',
     'admin.server.aria' => 'BladeCP server in use',

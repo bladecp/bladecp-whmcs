@@ -61,4 +61,5 @@ if (!defined('WHMCS')) {
     <p class="bcp-vibe-prompt__status" role="status" aria-live="polite" hidden></p>
     <noscript><p><?= $escape($copy['noscript']) ?></p></noscript>
 </section>
-<script src="<?= $escape($basePath) ?>/modules/addons/bladecp/assets/vibe-prompt.js?v=6" defer></script>
+<?php $launchEndpoints = \WHMCS\Module\Addon\Bladecp\VibePromptContext::additionalLaunchEndpoints(); ?>
+<script src="<?= $escape($basePath) ?>/modules/addons/bladecp/assets/vibe-prompt.js?v=7"<?= $launchEndpoints === [] ? '' : ' data-launch-endpoints="' . $escape(json_encode($launchEndpoints, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES)) . '"' ?> defer></script>

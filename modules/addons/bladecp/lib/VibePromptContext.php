@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WHMCS\Module\Addon\Bladecp;
 
 use WHMCS\Database\Capsule;
+use WHMCS\Module\Server\Bladecp\Config\Environments;
 use WHMCS\Module\Server\Bladecp\Helpers\AdminServerContext;
 use WHMCS\Module\Server\Bladecp\Helpers\SaleGuard;
 use WHMCS\Module\Server\Bladecp\Helpers\ServerConfig;
@@ -124,10 +125,30 @@ final class VibePromptContext
 
     public static function endpoint(string $apiBase): ?string
     {
-        return match (rtrim($apiBase, '/')) {
-            'https://api.bladecp.com/api/v1' => 'https://bladecp.app/api/reseller/launch-intents',
-            'https://api.bladecp.cloud/api/v1' => 'https://bladecp.work/api/reseller/launch-intents',
-            default => null,
-        };
+        $base = rtrim($apiBase, '/');
+        foreach (Environments::all() as $environment) {
+            if ($base === 'https://' . $environment['apiHost'] . '/api/v1') {
+                return self::launchEndpoint($environment);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Launch endpoints of the additional environments, declared to the
+     * browser so it can accept them besides the production endpoint.
+     *
+     * @return list<string>
+     */
+    public static function additionalLaunchEndpoints(): array
+    {
+        return array_map(self::launchEndpoint(...), Environments::additional());
+    }
+
+    /** @param array<string,string> $environment */
+    private static function launchEndpoint(array $environment): string
+    {
+        return 'https://' . $environment['vibeHost'] . '/api/reseller/launch-intents';
     }
 }

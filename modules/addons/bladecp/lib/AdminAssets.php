@@ -239,8 +239,8 @@ final class AdminAssets
 .bcp-server-context-name{overflow:hidden;color:var(--bcp-ink);font-size:13px;font-weight:bold;text-overflow:ellipsis;white-space:nowrap}
 .bcp-server-context-environment.bcp-badge{height:21px;margin:0;padding:0 8px;font-size:10px}
 .bcp-server-context-environment.bcp-badge::before{width:5px;height:5px;box-shadow:0 0 0 2px rgba(139,147,161,.14)}
-.bcp-server-context-environment.is-sandbox{border-color:rgba(79,70,229,.30);background:rgba(79,70,229,.08);color:var(--bcp-accent-deep)}
-.bcp-server-context-environment.is-sandbox::before{background:var(--bcp-accent);box-shadow:0 0 0 2px rgba(79,70,229,.18)}
+.bcp-server-context-environment.is-alternate{border-color:rgba(79,70,229,.30);background:rgba(79,70,229,.08);color:var(--bcp-accent-deep)}
+.bcp-server-context-environment.is-alternate::before{background:var(--bcp-accent);box-shadow:0 0 0 2px rgba(79,70,229,.18)}
 .bcp-server-context-environment.is-production{border-color:rgba(22,163,74,.24);background:rgba(22,163,74,.07);color:#15803d}
 .bcp-server-context-environment.is-production::before{background:#16a34a;box-shadow:0 0 0 2px rgba(22,163,74,.14)}
 .bcp-server-context-host{

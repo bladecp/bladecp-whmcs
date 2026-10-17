@@ -1,11 +1,24 @@
 (function (root) {
     'use strict';
 
-    const endpoints = new Set([
-        'https://bladecp.app/api/reseller/launch-intents',
-        'https://bladecp.work/api/reseller/launch-intents'
-    ]);
+    const endpoints = new Set(['https://bladecp.app/api/reseller/launch-intents']);
+    // An installation with additional platform environments declares their
+    // launch endpoints on this script element. A card attribute alone never
+    // adds an endpoint.
+    declaredEndpoints(root.document ? root.document.currentScript : null).forEach(endpoint => endpoints.add(endpoint));
     const imageTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']);
+
+    function declaredEndpoints(script) {
+        let declared;
+        try {
+            declared = JSON.parse(script && script.dataset && script.dataset.launchEndpoints || '[]');
+        } catch (_) {
+            return [];
+        }
+        if (!Array.isArray(declared)) return [];
+        return declared.filter(value => typeof value === 'string'
+            && /^https:\/\/[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?\/api\/reseller\/launch-intents$/.test(value));
+    }
 
     function validate(input) {
         const prompt = String(input.prompt || '').trim();
@@ -229,7 +242,7 @@
         });
     }
 
-    if (typeof module !== 'undefined' && module.exports) module.exports = {validate, capability, launch, dictation, mount};
+    if (typeof module !== 'undefined' && module.exports) module.exports = {validate, capability, launch, dictation, mount, declaredEndpoints};
     if (root.document) {
         const start = () => root.document.querySelectorAll('.bcp-vibe-prompt').forEach(card => {
             try { mount(card, root); } catch (_) { /* Form remains disabled without a working composer. */ }

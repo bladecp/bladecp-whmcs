@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace WHMCS\Module\Server\Bladecp\Helpers;
 
+use WHMCS\Module\Server\Bladecp\Config\Environments;
+
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
 }
@@ -11,12 +13,6 @@ if (!defined('WHMCS')) {
 /** Validates Vibe SSO redirects against the configured platform API environment. */
 final class VibeSsoDestination
 {
-    /** @var array<string,string> */
-    private const API_TO_VIBE_HOST = [
-        'api.bladecp.cloud' => 'bladecp.work',
-        'api.bladecp.com' => 'bladecp.app',
-    ];
-
     public static function isAllowed(mixed $url, string $apiBaseUrl): bool
     {
         if (!is_string($url) || trim($url) === '') {
@@ -32,7 +28,7 @@ final class VibeSsoDestination
         }
         $apiHost = strtolower(rtrim((string) $api['host'], '.'));
         $destinationHost = strtolower(rtrim((string) $destination['host'], '.'));
-        $allowedHost = self::API_TO_VIBE_HOST[$apiHost] ?? null;
+        $allowedHost = Environments::byApiHost($apiHost)['vibeHost'] ?? null;
         if ($allowedHost !== null) {
             return hash_equals($allowedHost, $destinationHost)
                 && (int) ($destination['port'] ?? 443) === 443;

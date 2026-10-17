@@ -132,14 +132,86 @@ if grep -RInE --exclude-dir=.git --exclude='check-public-tree.sh' \
   exit 1
 fi
 
-# Public prose and image metadata must never point readers to an unpublished
-# environment. The module code may retain sandbox support, but public docs and
-# screenshots are production-only.
-documentation_files=(README.md README.pt-BR.md README.es.md CHANGELOG.md SECURITY.md CONTRIBUTING.md docs assets/screenshots/README.md "${artwork[@]}")
-if grep -RIniE --exclude-dir=.git '(api\.bladecp\.cloud|sandbox|valuehost|ulisses)' "${documentation_files[@]}"; then
-  echo "error: public documentation contains a prohibited environment, third-party, or personal reference" >&2
-  exit 1
-fi
+# Addresses in every public text file, code included, follow generic rules:
+# BladeCP hosts come from the public production allowlist, e-mail addresses
+# use a reserved example domain or bladecp.com, and IPv4 addresses belong to
+# the special-purpose ranges (private, loopback, link-local, documentation,
+# reserved). The same rules run in tests/run.php.
+python3 - "$ROOT" <<'PY'
+import os
+import re
+import sys
+
+root = os.path.abspath(sys.argv[1])
+BINARY = {'.jpg', '.jpeg', '.png', '.gif', '.ico', '.webp', '.zip', '.gz', '.woff', '.woff2', '.ttf', '.eot', '.pdf'}
+PUBLIC_HOSTS = {
+    'bladecp.com', 'www.bladecp.com', 'api.bladecp.com', 'secure.bladecp.com', 'hub.bladecp.com',
+    'panel.bladecp.com', 'assets.bladecp.com', 'whmcs-demo.bladecp.com', 'bladecp.app',
+}
+RESERVED_SUFFIXES = ('.test', '.example', '.invalid', '.localhost')
+FILE_SUFFIXES = {
+    'php', 'js', 'cjs', 'mjs', 'css', 'json', 'md', 'svg', 'zip', 'tpl', 'png', 'jpg', 'jpeg', 'txt', 'sh',
+    'yml', 'yaml', 'html', 'htm', 'xml', 'lock', 'log', 'conf', 'ini', 'sql', 'git',
+}
+# A host label holds "bladecp"; a template or code variable ($name) and a
+# CSS class chain are not hosts, since a top-level domain has letters only.
+host = re.compile(r'(?<![A-Za-z0-9_$-])((?:[A-Za-z0-9-]+\.)*[A-Za-z0-9-]*bladecp[A-Za-z0-9-]*(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,63})(?![A-Za-z0-9_-])', re.I)
+email = re.compile(r'[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)')
+ipv4 = re.compile(r'(?<![\w.])(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?!\w|\.\d)')
+SPECIAL = [
+    ('0.0.0.0', 8), ('10.0.0.0', 8), ('100.64.0.0', 10), ('127.0.0.0', 8), ('169.254.0.0', 16),
+    ('172.16.0.0', 12), ('192.0.0.0', 24), ('192.0.2.0', 24), ('192.88.99.0', 24), ('192.168.0.0', 16),
+    ('198.18.0.0', 15), ('198.51.100.0', 24), ('203.0.113.0', 24), ('224.0.0.0', 4), ('240.0.0.0', 4),
+]
+
+def number(address):
+    a, b, c, d = (int(part) for part in address.split('.'))
+    return (a << 24) | (b << 16) | (c << 8) | d
+
+def special(address):
+    value = number(address)
+    return any(value >> (32 - bits) == number(network) >> (32 - bits) for network, bits in SPECIAL)
+
+def allowed_host(name):
+    name = name.lower().rstrip('.')
+    return name in PUBLIC_HOSTS or name.endswith(RESERVED_SUFFIXES) or name.rsplit('.', 1)[-1] in FILE_SUFFIXES
+
+def allowed_email(domain):
+    domain = domain.lower()
+    return (domain == 'bladecp.com' or domain in ('example.com', 'example.net', 'example.org')
+            or domain.endswith(('.example.com', '.example.net', '.example.org')) or domain.endswith(RESERVED_SUFFIXES))
+
+errors = []
+for base, dirs, names in os.walk(root):
+    dirs[:] = sorted(d for d in dirs if d != '.git')
+    for name in sorted(names):
+        path = os.path.join(base, name)
+        if os.path.splitext(name)[1].lower() in BINARY:
+            continue
+        try:
+            text = open(path, encoding='utf-8').read()
+        except UnicodeDecodeError:
+            errors.append(f'{os.path.relpath(path, root)}: not UTF-8 text')
+            continue
+        relative = os.path.relpath(path, root)
+        for line_number, line in enumerate(text.splitlines(), 1):
+            for match in host.finditer(line):
+                if not allowed_host(match.group(1)):
+                    errors.append(f'{relative}:{line_number}: host outside the public allowlist: {match.group(1)}')
+            for match in email.finditer(line):
+                if not allowed_email(match.group(1)):
+                    errors.append(f'{relative}:{line_number}: e-mail address outside the reserved and public domains: {match.group(0)}')
+            for match in ipv4.finditer(line):
+                address = match.group(0)
+                if all(int(part) <= 255 for part in match.groups()) and not special(address):
+                    errors.append(f'{relative}:{line_number}: globally routable IPv4 address: {address}')
+
+if errors:
+    print('error: public tree address check failed:', file=sys.stderr)
+    for item in errors:
+        print(f'  {item}', file=sys.stderr)
+    raise SystemExit(1)
+PY
 
 if grep -RInE --exclude-dir=.git --exclude='check-public-tree.sh' \
   '(bcp|vh)_(live|sand)_[A-Za-z0-9._-]{8,}|whsec_[A-Za-z0-9._-]{8,}|Authorization[[:space:]]*[:=][[:space:]]*(Bearer|Basic)[[:space:]]+[A-Za-z0-9._-]+' .; then

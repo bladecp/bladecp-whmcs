@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace WHMCS\Module\Addon\Bladecp;
 
 use WHMCS\Database\Capsule;
+use WHMCS\Module\Server\Bladecp\Config\Environments;
 use WHMCS\Module\Server\Bladecp\Helpers\FederationConfig;
 use WHMCS\Module\Server\Bladecp\Helpers\FederationLogout;
 use WHMCS\Module\Server\Bladecp\Helpers\Logger;
@@ -305,7 +306,7 @@ final class WhmcsSupportFlow
     private static function appHost(string $base): ?string
     {
         $host = strtolower((string) (parse_url($base, PHP_URL_HOST) ?? ''));
-        return match ($host) { 'api.bladecp.com' => 'bladecp.app', 'api.bladecp.cloud' => 'bladecp.work', default => $host === '127.0.0.1' ? '127.0.0.1' : null };
+        return Environments::byApiHost($host)['vibeHost'] ?? ($host === '127.0.0.1' ? '127.0.0.1' : null);
     }
     private static function validUrl(string $url, string $base, string $path, array $keys): bool
     {

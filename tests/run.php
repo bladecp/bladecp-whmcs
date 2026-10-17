@@ -161,23 +161,60 @@ check('public documentation declares three localized READMEs and 21 localized sc
     expect($actual === $screenshots, 'public package does not contain exactly the approved screenshot set');
 });
 
-check('public prose does not disclose unpublished, personal, or third-party demo references', static function () use ($root): void {
-    $paths = [
-        $root . '/README.md',
-        $root . '/README.pt-BR.md',
-        $root . '/README.es.md',
-        $root . '/CHANGELOG.md',
-        $root . '/SECURITY.md',
-        $root . '/CONTRIBUTING.md',
-        $root . '/assets/screenshots/README.md',
+check('public files name only public hosts, reserved example addresses and special-purpose IPv4 ranges', static function () use ($root): void {
+    $publicHosts = [
+        'bladecp.com', 'www.bladecp.com', 'api.bladecp.com', 'secure.bladecp.com', 'hub.bladecp.com',
+        'panel.bladecp.com', 'assets.bladecp.com', 'whmcs-demo.bladecp.com', 'bladecp.app',
     ];
-    foreach (glob($root . '/docs/*.md') ?: [] as $path) {
-        $paths[] = $path;
+    $reservedSuffix = '/\\.(?:test|example|invalid|localhost)$/';
+    $fileSuffix = '/\\.(?:php|js|cjs|mjs|css|json|md|svg|zip|tpl|png|jpg|jpeg|txt|sh|yml|yaml|html|htm|xml|lock|log|conf|ini|sql|git)$/';
+    $special = [
+        ['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16],
+        ['172.16.0.0', 12], ['192.0.0.0', 24], ['192.0.2.0', 24], ['192.88.99.0', 24], ['192.168.0.0', 16],
+        ['198.18.0.0', 15], ['198.51.100.0', 24], ['203.0.113.0', 24], ['224.0.0.0', 4], ['240.0.0.0', 4],
+    ];
+    $isSpecial = static function (string $address) use ($special): bool {
+        $value = ip2long($address);
+        foreach ($special as [$network, $bits]) {
+            if ($value !== false && ($value >> (32 - $bits)) === (ip2long($network) >> (32 - $bits))) {
+                return true;
+            }
+        }
+        return false;
+    };
+    $files = new RecursiveIteratorIterator(new RecursiveCallbackFilterIterator(
+        new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
+        static fn (SplFileInfo $file): bool => $file->getFilename() !== '.git'
+    ));
+    $problems = [];
+    foreach ($files as $file) {
+        if (!$file->isFile() || preg_match('/\\.(?:jpe?g|png|gif|ico|webp|zip|gz|woff2?|ttf|eot|pdf)$/i', $file->getFilename()) === 1) {
+            continue;
+        }
+        $relative = substr($file->getPathname(), strlen($root) + 1);
+        $contents = (string) file_get_contents($file->getPathname());
+        preg_match_all('/(?<![A-Za-z0-9_$-])((?:[A-Za-z0-9-]+\\.)*[A-Za-z0-9-]*bladecp[A-Za-z0-9-]*(?:\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,63})(?![A-Za-z0-9_-])/i', $contents, $hosts);
+        foreach ($hosts[1] as $host) {
+            $host = rtrim(strtolower($host), '.');
+            if (!in_array($host, $publicHosts, true) && preg_match($reservedSuffix, $host) !== 1 && preg_match($fileSuffix, $host) !== 1) {
+                $problems[] = "{$relative}: host {$host}";
+            }
+        }
+        preg_match_all('/[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)+)/', $contents, $emails);
+        foreach ($emails[1] as $index => $domain) {
+            $domain = strtolower($domain);
+            if ($domain !== 'bladecp.com' && preg_match('/(?:^|\\.)example\\.(?:com|net|org)$/', $domain) !== 1 && preg_match($reservedSuffix, $domain) !== 1) {
+                $problems[] = "{$relative}: e-mail {$emails[0][$index]}";
+            }
+        }
+        preg_match_all('/(?<![\\w.])(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})(?!\\w|\\.\\d)/', $contents, $addresses, PREG_SET_ORDER);
+        foreach ($addresses as $address) {
+            if (max(array_map('intval', array_slice($address, 1))) <= 255 && !$isSpecial($address[0])) {
+                $problems[] = "{$relative}: IPv4 {$address[0]}";
+            }
+        }
     }
-    foreach ($paths as $path) {
-        $contents = (string) file_get_contents($path);
-        expect(preg_match('/api\\.bladecp\\.cloud|sandbox|valuehost|ulisses/i', $contents) !== 1, "prohibited public prose reference in " . basename($path));
-    }
+    expect($problems === [], 'address outside the public rules: ' . implode('; ', array_slice($problems, 0, 5)));
 });
 
 if ($failures !== []) {

@@ -39,7 +39,7 @@ final class Endpoints
         $this->base = rtrim($this->base, '/');
     }
 
-    /** Base URL resolvida (ex.: `https://api.bladecp.cloud/api/v1`). */
+    /** Base URL resolvida (ex.: `https://api.bladecp.com/api/v1`). */
     public function base(): string
     {
         return $this->base;

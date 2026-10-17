@@ -14,7 +14,7 @@ if (!defined('WHMCS')) {
  * Pequeno armazenamento de cache local para dados derivados da Customer
  * API. Os caminhos nunca incluem host, chave ou id de servidor em texto:
  * cada escopo combina a instalação, endpoint e um fingerprint irreversível
- * da credencial. Assim um cache de sandbox, produção ou outra conta não é
+ * da credencial. Assim um cache de outro ambiente ou de outra conta não é
  * reutilizado por engano.
  *
  * Best-effort por desenho: qualquer falha de I/O devolve cache miss e quem

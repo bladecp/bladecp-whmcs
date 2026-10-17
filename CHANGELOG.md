@@ -6,6 +6,36 @@ The project follows [Semantic Versioning](https://semver.org/). Versions marked
 as release candidates are pre-release versions and may change before a stable
 release.
 
+## 0.9.0-rc.9
+
+This release candidate limits the package to the production BladeCP
+environment, documents the module cron as the scheduler requirement and moves
+the public hygiene gate to generic rules.
+
+### Changed
+
+- The package knows only the production BladeCP environment. The setup wizard
+  accepts production API keys and derives `api.bladecp.com`, and the
+  destinations of sign-in, support, Vibe, the Vibe prompt card and partner
+  logos are allow-listed for production hosts only.
+- The API key hint of the setup form names only the server address detected
+  from the key.
+- The scheduler requirement is the module cron, run every minute from the
+  server crontab. The standard WHMCS cron keeps WHMCS billing automation and
+  the native usage update, and rescues the module tasks if the module cron
+  stops. The compatibility, configuration and troubleshooting guides and the
+  three READMEs describe it this way.
+- The public structure and hygiene gate, `scripts/check-public-tree.sh`, and
+  the public regression checks, `tests/run.php`, apply generic rules to every
+  public file, code included: BladeCP hosts must belong to the public
+  production allowlist, e-mail addresses must use a reserved example domain or
+  `bladecp.com`, and IPv4 addresses must belong to special-purpose ranges.
+
+### Fixed
+
+- The configuration guide states that unsuccessful federated logout
+  deliveries are retried by the module cron every minute.
+
 ## 0.9.0-rc.8
 
 This release candidate gives the addon a cron of its own, bills migrations

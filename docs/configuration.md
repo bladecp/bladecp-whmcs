@@ -116,8 +116,9 @@ in BladeCP also invalidates its existing access when the authority is checked.
 Key rotation disables local sign-in until the new public key is registered and
 activation is confirmed again.
 
-Keep the normal WHMCS cron running. Customer logout attempts revocation
-immediately; unsuccessful deliveries are retained and retried after cron runs.
+Keep the module cron running. Customer logout attempts revocation
+immediately; unsuccessful deliveries are retained and retried by the module
+cron every minute.
 During a network outage, revocation is not instantaneous. Do not interpret a
 successful browser handoff as confirmation that the customer reached Vibe.
 
@@ -133,9 +134,10 @@ registration before disabling the old address.
 
 ## Usage cron
 
-WHMCS must run its normal daily cron for usage updates and billing automation.
-Configure the WHMCS cron according to your WHMCS installation requirements;
-the module does not replace the WHMCS cron scheduler.
+Usage updates and WHMCS billing automation come from the standard WHMCS cron,
+which calls the module once per server for usage. Configure it according to
+your WHMCS installation requirements. The module cron below runs the module
+tasks and does not replace it: keep both.
 
 ## Module cron
 

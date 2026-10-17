@@ -6,6 +6,7 @@ use WHMCS\Database\Capsule;
 use WHMCS\Module\Server\Bladecp\Api\Client;
 use WHMCS\Module\Server\Bladecp\Api\Exceptions\ApiException;
 use WHMCS\Module\Server\Bladecp\Api\VibeIdentityLink;
+use WHMCS\Module\Server\Bladecp\Config\Environments;
 use WHMCS\Module\Server\Bladecp\Helpers\FederationConfig;
 use WHMCS\Module\Server\Bladecp\Helpers\FederationLogout;
 use WHMCS\Module\Server\Bladecp\Helpers\ServerConfig;
@@ -229,7 +230,7 @@ final class FederationFlow
     private static function secureUrl(Client $client, mixed $url, string $intentId, string $state): ?string
     {
         $host = parse_url($client->baseUrl(), PHP_URL_HOST);
-        $secure = match ($host) { 'api.bladecp.cloud' => 'secure.bladecp.cloud', 'api.bladecp.com' => 'secure.bladecp.com', default => null };
+        $secure = Environments::byApiHost(is_string($host) ? $host : '')['secureHost'] ?? null;
         if ($secure === null || $url !== 'https://' . $secure . '/partner-link/' . $intentId) { return null; }
         return $url . '?state=' . rawurlencode($state);
     }

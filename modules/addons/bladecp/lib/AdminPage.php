@@ -6,6 +6,7 @@ namespace WHMCS\Module\Addon\Bladecp;
 
 use WHMCS\Module\Server\Bladecp\Api\Catalog;
 use WHMCS\Module\Server\Bladecp\Api\OptionCatalog;
+use WHMCS\Module\Server\Bladecp\Config\Environments;
 use WHMCS\Module\Server\Bladecp\Helpers\ComponentRef;
 use WHMCS\Module\Server\Bladecp\Helpers\AdminServerContext;
 use WHMCS\Module\Server\Bladecp\Helpers\SelectionRules;
@@ -1848,6 +1849,44 @@ final class AdminPage
     ): string {
         return SetupView::render($base, $error, $forceEdit);
     }
+    /**
+     * Environment badge of a server record and its name without a trailing
+     * environment suffix. An additional environment is matched before
+     * production, as it always was, so its own name and badge win for its
+     * API host. Pure.
+     *
+     * @return array{label:string,class:string,displayName:string}
+     */
+    public static function serverEnvironment(string $host, string $name): array
+    {
+        $normalizedHost = strtolower($host);
+        $environment = I18n::t('admin.server.custom');
+        $environmentClass = 'is-custom';
+        $alternateNames = '';
+        foreach (Environments::additional() as $candidate) {
+            $alternateNames .= '|' . preg_quote($candidate['id'], '/') . '|' . preg_quote($candidate['label'], '/');
+            if ($environmentClass === 'is-custom' && str_contains($normalizedHost, $candidate['apiHost'])) {
+                $environment = $candidate['label'];
+                $environmentClass = 'is-alternate';
+            }
+        }
+        if ($environmentClass === 'is-custom' && str_contains($normalizedHost, Setup::HOST_PRODUCTION)) {
+            $environment = I18n::t('admin.server.production');
+            $environmentClass = 'is-production';
+        }
+        $displayName = preg_replace(
+            '/\s*\((?:produção|producao|production' . $alternateNames . ')\)\s*$/iu',
+            '',
+            $name
+        );
+
+        return [
+            'label' => $environment,
+            'class' => $environmentClass,
+            'displayName' => trim(is_string($displayName) ? $displayName : $name),
+        ];
+    }
+
     private static function serverContextCard(string $base): string
     {
         $context = AdminServerContext::resolve();
@@ -1859,23 +1898,11 @@ final class AdminPage
 
         $name = trim((string) ($server['name'] ?? I18n::t('admin.server.default_name')));
         $host = trim((string) ($server['hostname'] ?? ''));
-        $normalizedHost = strtolower($host);
-        if (str_contains($normalizedHost, Setup::HOST_SANDBOX)) {
-            $environment = I18n::t('admin.server.sandbox');
-            $environmentClass = 'is-sandbox';
-        } elseif (str_contains($normalizedHost, Setup::HOST_PRODUCTION)) {
-            $environment = I18n::t('admin.server.production');
-            $environmentClass = 'is-production';
-        } else {
-            $environment = I18n::t('admin.server.custom');
-            $environmentClass = 'is-custom';
-        }
-        $displayName = preg_replace(
-            '/\s*\((?:sandbox|produção|producao|production)\)\s*$/iu',
-            '',
-            $name
-        );
-        $displayName = trim(is_string($displayName) ? $displayName : $name);
+        [
+            'label' => $environment,
+            'class' => $environmentClass,
+            'displayName' => $displayName,
+        ] = self::serverEnvironment($host, $name);
 
         return '<aside class="bcp-server-context-card" aria-label="' . self::e(I18n::t('admin.server.aria')) . '">'
             . '<span class="bcp-server-context-details">'

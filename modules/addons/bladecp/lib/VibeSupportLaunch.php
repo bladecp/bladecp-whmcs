@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace WHMCS\Module\Addon\Bladecp;
 
+use WHMCS\Module\Server\Bladecp\Config\Environments;
 use WHMCS\Module\Server\Bladecp\Helpers\ServerConfig;
 
 if (!defined('WHMCS')) {
@@ -133,11 +134,7 @@ final class VibeSupportLaunch
             || isset($parts['fragment']) || ($parts['path'] ?? '') !== '/support/authorize') {
             return false;
         }
-        $expectedHost = match (strtolower((string) ($api['host'] ?? ''))) {
-            'api.bladecp.com' => 'hub.bladecp.com',
-            'api.bladecp.cloud' => 'hub.bladecp.cloud',
-            default => null,
-        };
+        $expectedHost = Environments::byApiHost(strtolower((string) ($api['host'] ?? '')))['supportHost'] ?? null;
         if ($expectedHost === null || !hash_equals($expectedHost, strtolower((string) ($parts['host'] ?? '')))) {
             return false;
         }

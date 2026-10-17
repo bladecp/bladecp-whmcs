@@ -6,6 +6,7 @@ namespace WHMCS\Module\Addon\Bladecp\Admin;
 
 use WHMCS\Module\Addon\Bladecp\Provisioning;
 use WHMCS\Module\Addon\Bladecp\Setup;
+use WHMCS\Module\Server\Bladecp\Config\Environments;
 use WHMCS\Module\Server\Bladecp\Helpers\AdminServerContext;
 use WHMCS\Module\Server\Bladecp\Helpers\ServerConfig;
 
@@ -130,6 +131,7 @@ final class SetupView
                 . ($host !== '' ? ' <code>' . Layout::escape($host) . '</code>' : '')
                 . ' ' . Layout::escape(I18n::t('setup.form.currentCredentialAfter')) . '</p>';
         }
+        ['placeholder' => $placeholder, 'hint' => $hint] = self::keyFormat();
         $form = '<form method="post" action="' . Layout::escape($base)
             . '" class="bcp-setup-form">' . Layout::token()
             . '<input type="hidden" name="action" value="setup-save">'
@@ -137,15 +139,9 @@ final class SetupView
             . Layout::escape(I18n::t('setup.form.apiKey')) . '</label>'
             . '<input type="password" id="bcp-apikey" name="apikey" required '
             . 'autocomplete="off" spellcheck="false" '
-            . 'placeholder="bcp_sand_… · bcp_live_…" '
+            . 'placeholder="' . Layout::escape($placeholder) . '" '
             . 'class="bcp-setup-input">'
-            . '<p class="bcp-setup-hint">'
-            . Layout::escape(I18n::t('setup.form.environmentBefore'))
-            . ' <strong>Sandbox</strong> (<code>…_sand_…</code>) '
-            . Layout::escape(I18n::t('setup.form.environmentOr'))
-            . ' <strong>' . Layout::escape(I18n::t('setup.environment.production'))
-            . '</strong> (<code>…_live_…</code>) '
-            . Layout::escape(I18n::t('setup.form.environmentAfter')) . '</p>'
+            . '<p class="bcp-setup-hint">' . $hint . '</p>'
             . $current
             . '<div class="bcp-actions"><button class="btn btn-primary" '
             . 'type="submit">' . Layout::icon('plug')
@@ -160,11 +156,10 @@ final class SetupView
         $connection = $form;
         if ($existing !== null && !$editMode) {
             $host = trim((string) ($existing->hostname ?? ''));
-            $environment = $host === Setup::HOST_SANDBOX
-                ? I18n::t('setup.environment.sandbox')
-                : ($host === Setup::HOST_PRODUCTION
-                    ? I18n::t('setup.environment.production')
-                    : I18n::t('setup.environment.custom'));
+            $known = Environments::byApiHost($host);
+            $environment = $known === null
+                ? I18n::t('setup.environment.custom')
+                : Setup::environmentLabel($known);
             $healthState = $connectionState;
             $healthClass = match ($healthState) {
                 'valid' => 'is-valid',
@@ -388,5 +383,37 @@ final class SetupView
             'ausente' => I18n::t('setup.preflight.unavailable'),
             default => $detail,
         };
+    }
+
+    /**
+     * Key placeholder and hint (HTML) of the setup form. Additional
+     * environments are listed before production, which keeps the key format
+     * of the default environment last. With production only, the hint does
+     * not name any environment.
+     *
+     * @return array{placeholder:string,hint:string}
+     */
+    public static function keyFormat(): array
+    {
+        $environments = array_merge(Environments::additional(), [Environments::production()]);
+        $placeholder = implode(' · ', array_map(
+            static fn (array $environment): string => 'bcp_' . $environment['keyPrefix'] . '_…',
+            $environments
+        ));
+        if (count($environments) === 1) {
+            return ['placeholder' => $placeholder, 'hint' => Layout::escape(I18n::t('setup.form.addressDetected'))];
+        }
+
+        return [
+            'placeholder' => $placeholder,
+            'hint' => Layout::escape(I18n::t('setup.form.environmentBefore')) . ' '
+                . implode(' ' . Layout::escape(I18n::t('setup.form.environmentOr')) . ' ', array_map(
+                    static fn (array $environment): string => '<strong>'
+                        . Layout::escape(Setup::environmentLabel($environment)) . '</strong> (<code>…_'
+                        . Layout::escape($environment['keyPrefix']) . '_…</code>)',
+                    $environments
+                ))
+                . ' ' . Layout::escape(I18n::t('setup.form.environmentAfter')),
+        ];
     }
 }

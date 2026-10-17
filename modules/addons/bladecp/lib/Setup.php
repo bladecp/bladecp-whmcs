@@ -6,6 +6,7 @@ namespace WHMCS\Module\Addon\Bladecp;
 
 use WHMCS\Module\Server\Bladecp\Api\Client;
 use WHMCS\Module\Server\Bladecp\Api\Exceptions\AuthException;
+use WHMCS\Module\Server\Bladecp\Config\Environments;
 use WHMCS\Module\Server\Bladecp\Helpers\AdminServerContext;
 use WHMCS\Module\Server\Bladecp\Helpers\ServerConfig;
 use WHMCS\Module\Addon\Bladecp\Admin\I18n;
@@ -19,8 +20,7 @@ if (!defined('WHMCS')) {
  */
 final class Setup
 {
-    /** Hosts da API por ambiente. */
-    public const HOST_SANDBOX = 'api.bladecp.cloud';
+    /** Host da API de produção. */
     public const HOST_PRODUCTION = 'api.bladecp.com';
 
     /** @var array{state:string,ok:bool,who:?string,error:?string}|null */
@@ -34,13 +34,34 @@ final class Setup
      */
     public static function detectEnv(string $key): ?array
     {
-        if (preg_match('/^(?:bcp|vh)_(live|sand)_/', trim($key), $m) !== 1) {
+        if (preg_match('/^(?:bcp|vh)_([a-z]+)_/', trim($key), $m) !== 1) {
+            return null;
+        }
+        $environment = Environments::byKeyPrefix($m[1]);
+        if ($environment === null) {
             return null;
         }
 
-        return $m[1] === 'sand'
-            ? ['env' => 'sandbox', 'host' => self::HOST_SANDBOX, 'label' => I18n::t('setup.environment.sandbox')]
-            : ['env' => 'production', 'host' => self::HOST_PRODUCTION, 'label' => I18n::t('setup.environment.production')];
+        return [
+            'env' => $environment['id'],
+            'host' => $environment['apiHost'],
+            'label' => self::environmentLabel($environment),
+        ];
+    }
+
+    /**
+     * Nome exibido de um ambiente: produção é traduzida; um ambiente
+     * adicional traz o próprio nome.
+     *
+     * @param array<string,string> $environment
+     */
+    public static function environmentLabel(
+        array $environment,
+        string $productionKey = 'setup.environment.production'
+    ): string {
+        return Environments::isProduction($environment)
+            ? I18n::t($productionKey)
+            : (string) ($environment['label'] ?? '');
     }
 
     /**

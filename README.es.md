@@ -11,22 +11,22 @@
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/versi%C3%B3n-0.9.0--rc.8-4f46e5?style=flat-square&amp;labelColor=1e1b4b" alt="Versión 0.9.0-rc.8"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/versi%C3%B3n-0.9.0--rc.9-4f46e5?style=flat-square&amp;labelColor=1e1b4b" alt="Versión 0.9.0-rc.9"></a>
   <a href="#requisitos"><img src="https://img.shields.io/badge/PHP-8.1%2B-6366f1?style=flat-square&amp;labelColor=1e1b4b&amp;logo=php&amp;logoColor=white" alt="PHP 8.1 o posterior"></a>
   <a href="#requisitos"><img src="https://img.shields.io/badge/WHMCS-8.x%20%7C%209.x-4f46e5?style=flat-square&amp;labelColor=1e1b4b" alt="WHMCS 8.x y 9.x"></a>
   <a href="#requisitos"><img src="https://img.shields.io/badge/idiomas-EN%20%C2%B7%20PT--BR%20%C2%B7%20ES-7c3aed?style=flat-square&amp;labelColor=1e1b4b" alt="Inglés, portugués (Brasil) y español"></a><br>
-  <a href="#calidad"><img src="https://img.shields.io/badge/pruebas-1074%20aprobadas-8b5cf6?style=flat-square&amp;labelColor=1e1b4b" alt="1074 verificaciones automatizadas aprobadas en la versión candidata 0.9.0-rc.8"></a>
+  <a href="#calidad"><img src="https://img.shields.io/badge/pruebas-1086%20aprobadas-8b5cf6?style=flat-square&amp;labelColor=1e1b4b" alt="1086 verificaciones automatizadas aprobadas en la versión candidata 0.9.0-rc.9"></a>
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/estado-preliminar-6d28d9?style=flat-square&amp;labelColor=1e1b4b" alt="Versión preliminar"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licencia-MIT-4338ca?style=flat-square&amp;labelColor=1e1b4b" alt="Licencia MIT"></a>
   <a href="https://github.com/bladecp/bladecp-whmcs/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/bladecp/bladecp-whmcs/ci.yml?branch=main&amp;style=flat-square&amp;labelColor=1e1b4b&amp;label=CI%20p%C3%BAblico" alt="Estado del CI público"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.8/bladecp-whmcs-0.9.0-rc.8.zip"><strong>Descargar BladeCP para WHMCS (.zip)</strong></a>
+  <a href="https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.9/bladecp-whmcs-0.9.0-rc.9.zip"><strong>Descargar BladeCP para WHMCS (.zip)</strong></a>
   &nbsp;·&nbsp;
-  <a href="https://github.com/bladecp/bladecp-whmcs/releases/tag/v0.9.0-rc.8">Notas de la versión</a>
+  <a href="https://github.com/bladecp/bladecp-whmcs/releases/tag/v0.9.0-rc.9">Notas de la versión</a>
   &nbsp;·&nbsp;
-  <a href="https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.8/SHA256SUMS">Suma de comprobación SHA-256</a>
+  <a href="https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.9/SHA256SUMS">Suma de comprobación SHA-256</a>
 </p>
 
 <p align="center">
@@ -43,7 +43,7 @@
 </p>
 
 > [!IMPORTANT]
-> **Versión candidata `0.9.0-rc.8`.** Esta versión preliminar es para
+> **Versión candidata `0.9.0-rc.9`.** Esta versión preliminar es para
 > validación de socios. Pruébela en un entorno WHMCS que no sea de producción
 > antes de usarla con clientes.
 
@@ -180,19 +180,20 @@ pedidos, facturas y servicios.
 
 ## Descargas y notas de la versión
 
-**`0.9.0-rc.8`** es la versión candidata actual. Da al addon un cron propio,
-cobra en WHMCS las migraciones hechas con el cPanel Migrator y añade el flujo
-opcional de Fast Deploy, según el [changelog](CHANGELOG.md). Cada versión
+**`0.9.0-rc.9`** es la versión candidata actual. Limita el paquete al entorno
+de producción de BladeCP, documenta el cron del módulo como requisito de
+programación y lleva el control público de higiene a reglas genéricas, según el
+[changelog](CHANGELOG.md). Cada versión
 publicada ofrece el ZIP instalable y su suma de comprobación SHA-256. Revise
 las notas de la versión antes de actualizar.
 
 | Archivo | Finalidad |
 | --- | --- |
-| [**bladecp-whmcs-0.9.0-rc.8.zip**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.8/bladecp-whmcs-0.9.0-rc.8.zip) | Paquete instalable, que contiene solamente `modules/` |
-| [**SHA256SUMS**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.8/SHA256SUMS) | Suma de comprobación para verificar la integridad del ZIP |
-| [**RELEASE_NOTES.md**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.8/RELEASE_NOTES.md) | Notas que acompañan este paquete |
+| [**bladecp-whmcs-0.9.0-rc.9.zip**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.9/bladecp-whmcs-0.9.0-rc.9.zip) | Paquete instalable, que contiene solamente `modules/` |
+| [**SHA256SUMS**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.9/SHA256SUMS) | Suma de comprobación para verificar la integridad del ZIP |
+| [**RELEASE_NOTES.md**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.9/RELEASE_NOTES.md) | Notas que acompañan este paquete |
 
-Consulte la [página de esta versión](https://github.com/bladecp/bladecp-whmcs/releases/tag/v0.9.0-rc.8)
+Consulte la [página de esta versión](https://github.com/bladecp/bladecp-whmcs/releases/tag/v0.9.0-rc.9)
 o [todas las versiones de BladeCP para WHMCS](https://github.com/bladecp/bladecp-whmcs/releases).
 Los archivos automáticos **Source code** de GitHub contienen el repositorio;
 para instalar el módulo, use el ZIP indicado en la tabla.
@@ -215,8 +216,9 @@ El rango compatible sigue siendo WHMCS 8.x y 9.x con PHP 8.1 o posterior. La
 última matriz completa de validación se hizo en `0.9.0-rc.4`, con WHMCS 8.13.3
 y 9.0.6, PHP 8.2.31, MariaDB 12.3.2, la administración Blend y los temas de
 cliente Twenty-One, Six y Nexus. Son entornos validados, no requisitos mínimos
-adicionales. La versión candidata `0.9.0-rc.8` funciona en instalaciones WHMCS
-de producción de partners. Pruebe la versión en una instalación WHMCS no
+adicionales. Las versiones candidatas de la línea 0.9.0 funcionan en
+instalaciones WHMCS de producción de partners. Pruebe la versión en una
+instalación WHMCS no
 productiva antes de ponerla a disposición de sus clientes.
 
 También necesita:
@@ -226,8 +228,8 @@ También necesita:
 - Una clave de la Customer API de BladeCP.
 - PHP con las extensiones cURL, JSON y OpenSSL activadas.
 - Acceso HTTPS saliente a `api.bladecp.com`.
-- Un cron diario funcional de WHMCS para la sincronización de uso y la automatización de facturación.
-- El cron del módulo, ejecutado cada minuto por el crontab del servidor. Vea [Cron del módulo](docs/configuration.md#module-cron) (en inglés).
+- El cron del módulo, ejecutado cada minuto por el crontab del servidor, para las colas y la sincronización diaria del módulo. Vea [Cron del módulo](docs/configuration.md#module-cron) (en inglés).
+- El cron estándar de WHMCS, para la automatización de facturación y la actualización nativa de uso de WHMCS. También rescata las tareas del módulo si el cron del módulo se detiene.
 - Un endpoint HTTPS público si activa webhooks entrantes.
 
 <a id="instalacion"></a>
@@ -392,10 +394,10 @@ pública.
 
 ## Calidad y validación
 
-La versión candidata `0.9.0-rc.8` fue validada por los mantenedores con
-**1074 verificaciones automatizadas**: 715 verificaciones deterministas de
+La versión candidata `0.9.0-rc.9` fue validada por los mantenedores con
+**1086 verificaciones automatizadas**: 726 verificaciones deterministas de
 mapeo, enrutamiento, controles de venta, enmascaramiento de secretos, catálogo,
-webhooks y flujos de Vibe, y 359 verificaciones de integración que ejercitan
+webhooks y flujos de Vibe, y 360 verificaciones de integración que ejercitan
 hooks, actualizaciones de esquema, configuración cifrada, el transporte cURL y
 el endpoint público de webhooks en un entorno WHMCS simulado, con PHP 8.2. La
 insignia de pruebas representa esa ejecución.
@@ -477,9 +479,10 @@ requieren el addon.
 <details>
 <summary><strong>¿Basta con el cron de WHMCS?</strong></summary>
 
-Mantenga el cron diario de WHMCS para el uso y la automatización de
-facturación, y añada el cron del módulo cada minuto. Si el cron del módulo se
-detiene, el cron de WHMCS rescata las colas tras 15 minutos y la
+No. Añada el cron del módulo cada minuto: ejecuta las colas y la
+sincronización diaria del módulo. Mantenga el cron de WHMCS para la
+automatización de facturación y la actualización nativa de uso. Si el cron del
+módulo se detiene, el cron de WHMCS rescata las colas tras 15 minutos y la
 sincronización diaria tras 36 horas.
 
 </details>

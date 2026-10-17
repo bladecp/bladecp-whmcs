@@ -6,6 +6,7 @@ namespace WHMCS\Module\Server\Bladecp\Functions\Vibe;
 
 use WHMCS\Module\Server\Bladecp\Api\Client;
 use WHMCS\Module\Server\Bladecp\Api\Exceptions\ApiException;
+use WHMCS\Module\Server\Bladecp\Config\Environments;
 
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
@@ -320,7 +321,7 @@ final class IdentityHandoff
         }
         $parts = parse_url($url);
         $host = is_array($parts) ? strtolower(rtrim((string) ($parts['host'] ?? ''), '.')) : '';
-        $allowedHosts = ['secure.bladecp.cloud', 'secure.bladecp.com'];
+        $allowedHosts = Environments::secureHosts();
         if (PHP_SAPI === 'cli') $allowedHosts[] = 'secure.bladecp.test';
         if (!is_array($parts) || strtolower((string) ($parts['scheme'] ?? '')) !== 'https'
             || $host === '' || isset($parts['user'], $parts['pass'], $parts['fragment'])

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WHMCS\Module\Server\Bladecp\Ui;
 
 use WHMCS\Module\Server\Bladecp\Api\Client;
+use WHMCS\Module\Server\Bladecp\Config\Environments;
 use WHMCS\Module\Server\Bladecp\Helpers\CacheStore;
 
 if (!defined('WHMCS')) {
@@ -21,12 +22,6 @@ final class PartnerBrand
     private const CACHE_KEY = 'partner-branding-assets-v1.json';
     private const CACHE_TTL_SECONDS = 300;
     private const STALE_IF_ERROR_SECONDS = 86400;
-
-    /** @var list<string> */
-    private const APPROVED_CDN_HOSTS = [
-        'assets.bladecp.com',
-        'assets.bladecp.cloud',
-    ];
 
     /**
      * @return array{publicName:string,logoUrl:string,logoDarkUrl:string}
@@ -151,7 +146,7 @@ final class PartnerBrand
         }
         $host = strtolower(rtrim((string) $parts['host'], '.'));
         $path = (string) ($parts['path'] ?? '');
-        if (!in_array($host, self::APPROVED_CDN_HOSTS, true)
+        if (!in_array($host, Environments::assetHosts(), true)
             || $path === '' || !str_starts_with($path, '/') || str_contains($path, '//')) {
             return '';
         }

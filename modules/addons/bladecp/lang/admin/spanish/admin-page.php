@@ -94,7 +94,7 @@ return [
     'admin.common.other' => 'Otros', 'admin.common.continue' => 'Continuar', 'admin.common.product_number' => 'Producto #{id}',
     'admin.components.default' => 'predeterminado', 'admin.components.version_of' => 'Versión de {name}', 'admin.components.label' => 'Componentes',
     'admin.components.catalog_detail' => 'Catálogo global de BladeCP. La lista permitida por producto se aplica durante el aprovisionamiento.',
-    'admin.server.default_name' => 'Servidor BladeCP', 'admin.server.sandbox' => 'Sandbox', 'admin.server.production' => 'Producción', 'admin.server.custom' => 'Personalizado',
+    'admin.server.default_name' => 'Servidor BladeCP', 'admin.server.production' => 'Producción', 'admin.server.custom' => 'Personalizado',
     'admin.server.aria' => 'Servidor BladeCP en uso', 'admin.server.label' => 'Servidor', 'admin.server.review' => 'Revisar configuración',
     'admin.setup.multiple_servers' => 'Hay más de un servidor BladeCP elegible. Elija el servidor utilizado por las pantallas globales.',
     'admin.setup.selected_server_unavailable' => 'La cuenta BladeCP seleccionada anteriormente ya no está disponible.',
