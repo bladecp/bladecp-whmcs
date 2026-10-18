@@ -39,11 +39,11 @@ final class ModuleCronView
             . '<p>' . Layout::escape($detail) . '</p></div>'
             . '<span class="bcp-badge ' . ($ready ? 'is-ok' : 'is-warn') . '">'
             . Layout::escape(I18n::t($ready ? 'diagnostics.cron.active' : 'diagnostics.cron.attention')) . '</span></div>'
-            . '<dl class="bcp-cron-details"><dt>' . Layout::escape(I18n::t('diagnostics.cron.last_run')) . '</dt><dd>'
-            . Layout::escape($heartbeat > 0 ? self::time($heartbeat) : I18n::t('diagnostics.cron.none')) . '</dd>'
-            . '<dt>' . Layout::escape(I18n::t('diagnostics.cron.pending')) . '</dt><dd>' . $pending['count'] . '</dd>'
-            . '<dt>' . Layout::escape(I18n::t('diagnostics.cron.oldest')) . '</dt><dd>'
-            . Layout::escape($pending['oldest'] ?? I18n::t('diagnostics.cron.none')) . '</dd></dl>'
+            . '<dl class="bcp-cron-details"><div><dt>' . Layout::escape(I18n::t('diagnostics.cron.last_run')) . '</dt><dd>'
+            . Layout::escape($heartbeat > 0 ? self::time($heartbeat) : I18n::t('diagnostics.cron.none')) . '</dd></div>'
+            . '<div><dt>' . Layout::escape(I18n::t('diagnostics.cron.pending')) . '</dt><dd>' . $pending['count'] . '</dd></div>'
+            . '<div><dt>' . Layout::escape(I18n::t('diagnostics.cron.oldest')) . '</dt><dd>'
+            . Layout::escape($pending['oldest'] ?? I18n::t('diagnostics.cron.none')) . '</dd></div></dl>'
             . self::tasks($status['tasks'])
             . '<label class="bcp-fg-l" for="bcp-module-cron-command">' . Layout::escape(I18n::t('diagnostics.cron.command_label')) . '</label>'
             . '<div class="bcp-cron-command"><code id="bcp-module-cron-command">' . Layout::escape($command) . '</code> '
@@ -90,7 +90,7 @@ final class ModuleCronView
             return '<p class="bcp-experience-help">' . Layout::escape(I18n::t('diagnostics.cron.auto_unavailable_' . $availability['reason'])) . '</p>';
         }
         $button = static fn (string $action, string $label, string $class): string => '<form method="post" action="' . Layout::escape($base)
-            . '" style="display:inline">' . Layout::token() . '<input type="hidden" name="action" value="' . $action . '">'
+            . '">' . Layout::token() . '<input type="hidden" name="action" value="' . $action . '">'
             . '<button type="submit" class="btn ' . $class . '">' . Layout::escape(I18n::t($label)) . '</button></form> ';
         return '<div class="bcp-cron-activation">' . $button('module-cron-install', 'diagnostics.cron.auto_install', 'btn-primary')
             . $button('module-cron-remove', 'diagnostics.cron.auto_remove', 'btn-default')
@@ -101,9 +101,9 @@ final class ModuleCronView
     {
         return '<form method="post" action="' . Layout::escape($base) . '" class="bcp-cron-alerts">' . Layout::token()
             . '<input type="hidden" name="action" value="module-cron-alerts">'
-            . '<label><input type="checkbox" name="module_cron_alerts" value="1"' . (ModuleCronAlert::enabled() ? ' checked' : '') . '> '
-            . Layout::escape(I18n::t('diagnostics.cron.alerts_label')) . '</label> '
-            . '<button type="submit" class="btn btn-default btn-sm">' . Layout::escape(I18n::t('diagnostics.cron.save')) . '</button>'
+            . '<label class="bcp-experience-toggle"><input type="checkbox" name="module_cron_alerts" value="1"' . (ModuleCronAlert::enabled() ? ' checked' : '') . '><span>'
+            . Layout::escape(I18n::t('diagnostics.cron.alerts_label')) . '</span></label>'
+            . '<button type="submit" class="btn btn-default">' . Layout::escape(I18n::t('diagnostics.cron.save')) . '</button>'
             . '<p class="bcp-experience-help">' . Layout::escape(I18n::t('diagnostics.cron.alerts_help')) . '</p></form>';
     }
 

@@ -81,8 +81,9 @@ Open **Plans** in the BladeCP addon and review each Vibe plan's readiness and
 synchronization details. These are separate requirements:
 
 1. The selected WHMCS server must use a partner key issued for the API host
-   configured in that server record. A test WHMCS installation keeps its own
-   server record, key and catalog, so configure and synchronize it separately.
+   configured in that server record. Each environment has independent
+   configuration. A test WHMCS installation keeps its own server record, key
+   and catalog, so configure and synchronize it separately.
 2. The technical plan needs an active Vibe reseller enrollment and an allowed
    AI mode. Partner AI requires a supported, validated credential for that
    server. Unpublished and administratively disabled plans remain blocked.

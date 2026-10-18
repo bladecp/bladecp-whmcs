@@ -43,7 +43,7 @@ final class MigrationReviewView
         $rows = BillingStore::open($serverId);
         $body = self::flash() . self::settings($base, $serverId);
         if ($rows === []) {
-            $body .= '<p class="bcp-row-v">' . Layout::escape(I18n::t('review.empty')) . '</p>';
+            $body .= '<div class="bcp-empty-state bcp-review-empty"><strong>' . Layout::escape(I18n::t('review.empty')) . '</strong></div>';
             return Layout::card($head, Layout::tabs($base, 'migration-review') . $body . self::linked($serverId));
         }
         $selected = filter_var($_GET['review'] ?? null, FILTER_VALIDATE_INT);
@@ -80,7 +80,7 @@ final class MigrationReviewView
         $html = '<section class="bcp-diagnostic-section" id="bcp-linked-migrations"><div class="bcp-section-heading"><div><h4>'
             . Layout::escape(I18n::t('review.linked_title')) . '</h4><p>' . Layout::escape(I18n::t('review.linked_description')) . '</p></div></div>';
         if ($rows === []) {
-            return $html . '<p class="bcp-row-v">' . Layout::escape(I18n::t('review.linked_empty')) . '</p></section>';
+            return $html . '<p class="bcp-section-empty">' . Layout::escape(I18n::t('review.linked_empty')) . '</p></section>';
         }
         $html .= '<div class="bcp-tbl-wrap"><table class="bcp-tbl"><thead><tr>'
             . '<th scope="col">' . Layout::escape(I18n::t('review.domain')) . '</th>'
@@ -253,9 +253,9 @@ final class MigrationReviewView
         $enabled = BillingImport::resellerLookupEnabled($serverId);
         return '<form method="post" action="' . Layout::escape($base) . '" class="bcp-review-settings">' . Layout::token()
             . '<input type="hidden" name="action" value="migration-review-settings">'
-            . '<label><input type="checkbox" name="reseller_lookup" value="1"' . ($enabled ? ' checked' : '') . '> '
-            . Layout::escape(I18n::t('review.reseller_lookup')) . '</label> '
-            . '<button type="submit" class="btn btn-default btn-sm">' . Layout::escape(I18n::t('review.save')) . '</button>'
+            . '<label class="bcp-experience-toggle"><input type="checkbox" name="reseller_lookup" value="1"' . ($enabled ? ' checked' : '') . '><span>'
+            . Layout::escape(I18n::t('review.reseller_lookup')) . '</span></label>'
+            . '<button type="submit" class="btn btn-default">' . Layout::escape(I18n::t('review.save')) . '</button>'
             . '<p class="bcp-experience-help">' . Layout::escape(I18n::t('review.reseller_lookup_help')) . '</p></form>';
     }
 

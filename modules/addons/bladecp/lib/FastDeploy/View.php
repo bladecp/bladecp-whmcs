@@ -56,7 +56,7 @@ final class View
     public static function copy(string $locale): array
     {
         $locale = match (strtolower(str_replace('_', '-', $locale))) {
-            'pt', 'pt-br', 'portuguese', 'portuguese-br' => 'pt',
+            'pt', 'pt-br', 'pt-pt', 'portuguese', 'portuguese-br', 'portuguese-pt', 'portugues', 'portugues-br' => 'pt',
             'es', 'es-es', 'spanish' => 'es',
             default => 'en',
         };

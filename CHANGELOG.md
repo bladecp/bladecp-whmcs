@@ -6,6 +6,25 @@ The project follows [Semantic Versioning](https://semver.org/). Versions marked
 as release candidates are pre-release versions and may change before a stable
 release.
 
+## 0.9.0-rc.10
+
+This release candidate polishes four administration screens of the addon and
+opens it in Portuguese under every name WHMCS gives the Portuguese pack.
+
+### Fixed
+
+- The module cron card in **Diagnostics** shows the last run, the waiting
+  tasks and the oldest task as cards, the recommended command in a code box,
+  the activation buttons in one row, and the email alert as a switch.
+- **Migrations to review** shows the reseller suggestion setting as a switch
+  with its explanation, and an empty review as an empty state.
+- **Pricing** names the billing cycles in the administrator's language.
+- **Operation** says that a service has no due date, as free plans do, instead
+  of showing `0000-00-00`.
+- The addon opens in Portuguese when the WHMCS Portuguese pack is named
+  `portugues-br`, `portugues` or `portuguese-pt`, in the administration and in
+  the client area. Those installations saw it in English.
+
 ## 0.9.0-rc.9
 
 This release candidate limits the package to the production BladeCP

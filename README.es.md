@@ -11,22 +11,22 @@
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/versi%C3%B3n-0.9.0--rc.9-4f46e5?style=flat-square&amp;labelColor=1e1b4b" alt="Versión 0.9.0-rc.9"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/versi%C3%B3n-0.9.0--rc.10-4f46e5?style=flat-square&amp;labelColor=1e1b4b" alt="Versión 0.9.0-rc.10"></a>
   <a href="#requisitos"><img src="https://img.shields.io/badge/PHP-8.1%2B-6366f1?style=flat-square&amp;labelColor=1e1b4b&amp;logo=php&amp;logoColor=white" alt="PHP 8.1 o posterior"></a>
   <a href="#requisitos"><img src="https://img.shields.io/badge/WHMCS-8.x%20%7C%209.x-4f46e5?style=flat-square&amp;labelColor=1e1b4b" alt="WHMCS 8.x y 9.x"></a>
   <a href="#requisitos"><img src="https://img.shields.io/badge/idiomas-EN%20%C2%B7%20PT--BR%20%C2%B7%20ES-7c3aed?style=flat-square&amp;labelColor=1e1b4b" alt="Inglés, portugués (Brasil) y español"></a><br>
-  <a href="#calidad"><img src="https://img.shields.io/badge/pruebas-1086%20aprobadas-8b5cf6?style=flat-square&amp;labelColor=1e1b4b" alt="1086 verificaciones automatizadas aprobadas en la versión candidata 0.9.0-rc.9"></a>
+  <a href="#calidad"><img src="https://img.shields.io/badge/pruebas-1092%20aprobadas-8b5cf6?style=flat-square&amp;labelColor=1e1b4b" alt="1092 verificaciones automatizadas aprobadas en la versión candidata 0.9.0-rc.10"></a>
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/estado-preliminar-6d28d9?style=flat-square&amp;labelColor=1e1b4b" alt="Versión preliminar"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licencia-MIT-4338ca?style=flat-square&amp;labelColor=1e1b4b" alt="Licencia MIT"></a>
   <a href="https://github.com/bladecp/bladecp-whmcs/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/bladecp/bladecp-whmcs/ci.yml?branch=main&amp;style=flat-square&amp;labelColor=1e1b4b&amp;label=CI%20p%C3%BAblico" alt="Estado del CI público"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.9/bladecp-whmcs-0.9.0-rc.9.zip"><strong>Descargar BladeCP para WHMCS (.zip)</strong></a>
+  <a href="https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.10/bladecp-whmcs-0.9.0-rc.10.zip"><strong>Descargar BladeCP para WHMCS (.zip)</strong></a>
   &nbsp;·&nbsp;
-  <a href="https://github.com/bladecp/bladecp-whmcs/releases/tag/v0.9.0-rc.9">Notas de la versión</a>
+  <a href="https://github.com/bladecp/bladecp-whmcs/releases/tag/v0.9.0-rc.10">Notas de la versión</a>
   &nbsp;·&nbsp;
-  <a href="https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.9/SHA256SUMS">Suma de comprobación SHA-256</a>
+  <a href="https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.10/SHA256SUMS">Suma de comprobación SHA-256</a>
 </p>
 
 <p align="center">
@@ -43,7 +43,7 @@
 </p>
 
 > [!IMPORTANT]
-> **Versión candidata `0.9.0-rc.9`.** Esta versión preliminar es para
+> **Versión candidata `0.9.0-rc.10`.** Esta versión preliminar es para
 > validación de socios. Pruébela en un entorno WHMCS que no sea de producción
 > antes de usarla con clientes.
 
@@ -180,7 +180,7 @@ pedidos, facturas y servicios.
 
 ## Descargas y notas de la versión
 
-**`0.9.0-rc.9`** es la versión candidata actual. Limita el paquete al entorno
+**`0.9.0-rc.10`** es la versión candidata actual. Limita el paquete al entorno
 de producción de BladeCP, documenta el cron del módulo como requisito de
 programación y lleva el control público de higiene a reglas genéricas, según el
 [changelog](CHANGELOG.md). Cada versión
@@ -189,11 +189,11 @@ las notas de la versión antes de actualizar.
 
 | Archivo | Finalidad |
 | --- | --- |
-| [**bladecp-whmcs-0.9.0-rc.9.zip**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.9/bladecp-whmcs-0.9.0-rc.9.zip) | Paquete instalable, que contiene solamente `modules/` |
-| [**SHA256SUMS**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.9/SHA256SUMS) | Suma de comprobación para verificar la integridad del ZIP |
-| [**RELEASE_NOTES.md**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.9/RELEASE_NOTES.md) | Notas que acompañan este paquete |
+| [**bladecp-whmcs-0.9.0-rc.10.zip**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.10/bladecp-whmcs-0.9.0-rc.10.zip) | Paquete instalable, que contiene solamente `modules/` |
+| [**SHA256SUMS**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.10/SHA256SUMS) | Suma de comprobación para verificar la integridad del ZIP |
+| [**RELEASE_NOTES.md**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.10/RELEASE_NOTES.md) | Notas que acompañan este paquete |
 
-Consulte la [página de esta versión](https://github.com/bladecp/bladecp-whmcs/releases/tag/v0.9.0-rc.9)
+Consulte la [página de esta versión](https://github.com/bladecp/bladecp-whmcs/releases/tag/v0.9.0-rc.10)
 o [todas las versiones de BladeCP para WHMCS](https://github.com/bladecp/bladecp-whmcs/releases).
 Los archivos automáticos **Source code** de GitHub contienen el repositorio;
 para instalar el módulo, use el ZIP indicado en la tabla.
@@ -394,8 +394,8 @@ pública.
 
 ## Calidad y validación
 
-La versión candidata `0.9.0-rc.9` fue validada por los mantenedores con
-**1086 verificaciones automatizadas**: 726 verificaciones deterministas de
+La versión candidata `0.9.0-rc.10` fue validada por los mantenedores con
+**1092 verificaciones automatizadas**: 732 verificaciones deterministas de
 mapeo, enrutamiento, controles de venta, enmascaramiento de secretos, catálogo,
 webhooks y flujos de Vibe, y 360 verificaciones de integración que ejercitan
 hooks, actualizaciones de esquema, configuración cifrada, el transporte cURL y

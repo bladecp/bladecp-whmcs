@@ -138,6 +138,28 @@ final class AdminAssets
 .bcp-help-strip,.bcp-chips-note{font-size:12px;line-height:1.55}.bcp-help-strip{margin-top:16px;padding:12px 14px;border-radius:var(--bcp-r-sm);border:1px solid var(--bcp-line);color:var(--bcp-muted);background:var(--bcp-raised)}
 .bcp-diagnostic-section{margin:16px 0;padding:17px 18px;border:1px solid var(--bcp-line);border-radius:var(--bcp-r-sm);background:var(--bcp-raised)}.bcp-diagnostic-section h4{margin:0;font-size:14px;color:var(--bcp-ink)}
 .bcp-diagnostic-section.bcp-diagnostic-overview{background:transparent}
+/* Module cron (Diagnostics) and the settings of the migration review: the
+   facts as cards, the command in a code box, the actions in a row and the
+   switches of the client area tab. */
+.bcp-cron-details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0 6px}
+.bcp-cron-details>div{padding:11px 12px;border:1px solid var(--bcp-line);border-radius:var(--bcp-r-sm);background:var(--bcp-soft)}
+.bcp-cron-details dt{margin:0 0 4px;color:var(--bcp-faint);font-size:10.5px;font-weight:bold;letter-spacing:.06em;text-transform:uppercase}
+.bcp-cron-details dd{margin:0;color:var(--bcp-ink);font-size:13px;font-weight:600;line-height:1.45}
+.bcp-diagnostic-section>.bcp-fg-l{display:block;margin:18px 0 6px;color:var(--bcp-ink);font-size:12px;font-weight:600}
+.bcp-cron-command{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.bcp-cron-command code{flex:1 1 320px;min-width:0;padding:8px 10px;border:1px solid var(--bcp-line);border-radius:var(--bcp-r-sm);background:var(--bcp-soft);color:var(--bcp-ink);font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-all}
+.bcp-cron-activation{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+.bcp-cron-activation form{margin:0}
+.bcp-cron-activation .bcp-experience-help,.bcp-cron-alerts .bcp-experience-help,.bcp-review-settings .bcp-experience-help{flex:1 0 100%;margin:0}
+.bcp-cron-alerts,.bcp-review-settings{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 14px}
+.bcp-cron-alerts{margin-top:16px;padding-top:14px;border-top:1px solid var(--bcp-line)}
+.bcp-review-settings{margin:4px 0 16px;padding:14px 16px;border:1px solid var(--bcp-line);border-left:3px solid var(--bcp-accent);border-radius:var(--bcp-r-sm);background:var(--bcp-raised)}
+.bcp-cron-alerts .bcp-experience-toggle,.bcp-review-settings .bcp-experience-toggle{flex:1 1 260px}
+.bcp-cron-alerts .btn,.bcp-review-settings .btn{flex:none}
+.bcp-review-empty{margin:0 0 16px}
+.bcp-shell .bcp-cron-activation .bcp-experience-help,.bcp-shell .bcp-cron-alerts .bcp-experience-help,.bcp-shell .bcp-review-settings .bcp-experience-help{font-size:12px;line-height:1.6;color:var(--bcp-muted)}
+.bcp-shell .bcp-section-empty{margin:4px 0 0;color:var(--bcp-muted);font-size:13px;text-align:left}
+@media(max-width:720px){.bcp-cron-details{grid-template-columns:1fr}}
 .bcp-diagnostic-list{list-style:none;margin:0;padding:0}.bcp-diagnostic-list li{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--bcp-line)}.bcp-diagnostic-list li>.btn{margin-left:auto}.bcp-diag-state{flex:0 0 auto;min-width:84px;padding:3px 7px;text-align:center;border:1px solid rgba(22,163,74,.28);border-radius:999px;background:rgba(22,163,74,.08);color:#15803d;font-size:11px;font-weight:bold}.bcp-diag-state.is-muted,.bcp-diag-state.is-unknown{border-color:var(--bcp-line);background:transparent;color:var(--bcp-faint)}.bcp-diag-state.is-attention,.bcp-diag-state.is-warn{border-color:rgba(217,119,6,.30);background:rgba(217,119,6,.08);color:#b45309}.bcp-diag-state.is-blocked,.bcp-diag-state.is-failed{border-color:rgba(220,38,38,.3);background:rgba(220,38,38,.07);color:#b91c1c}.bcp-diagnostic-list strong{font-size:13px;color:var(--bcp-ink)}.bcp-diagnostic-list p{margin:3px 0 0;color:var(--bcp-muted);font-size:12px;line-height:1.45}
 .bcp-glossary{margin-top:16px;padding:17px 18px;border:1px solid var(--bcp-line);border-radius:var(--bcp-r-sm)}.bcp-glossary h4{font-size:14px}.bcp-glossary dl{display:grid;grid-template-columns:150px 1fr;gap:8px 16px;margin:12px 0 0;font-size:12px}.bcp-glossary dt{font-weight:bold;color:var(--bcp-ink)}.bcp-glossary dd{margin:0;color:var(--bcp-muted);line-height:1.45}
 .bcp-shell .bcp-docs-help{margin:16px 0 0;color:var(--bcp-muted);font-size:12px}.bcp-docs-help a{font-weight:bold;color:var(--bcp-accent-deep)}

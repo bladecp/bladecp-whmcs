@@ -95,7 +95,7 @@ final class MigrationClaimClientArea
         $locale ??= is_string($_SESSION['Language'] ?? null) ? $_SESSION['Language']
             : (is_string($GLOBALS['CONFIG']['Language'] ?? null) ? $GLOBALS['CONFIG']['Language'] : 'english');
         $locale = match (strtolower(str_replace('_', '-', $locale))) {
-            'pt', 'pt-br', 'portuguese', 'portuguese-br' => 'portuguese-br',
+            'pt', 'pt-br', 'pt-pt', 'portuguese', 'portuguese-br', 'portuguese-pt', 'portugues', 'portugues-br' => 'portuguese-br',
             'es', 'es-es', 'spanish' => 'spanish',
             default => 'english',
         };

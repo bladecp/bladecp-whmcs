@@ -104,4 +104,11 @@ return [
     'admin.setup.quick_setup' => 'Configuración rápida', 'admin.setup.choose_account' => 'Elegir cuenta',
     'admin.setup.choose_valid_account' => 'Elija una cuenta BladeCP válida antes de guardar una credencial. Esto evita crear o cambiar un servidor diferente por error.',
     'admin.setup.starter_product_failed' => 'No fue posible crear el producto de prueba ({error}). Créelo manualmente en Setup > Products/Services (módulo bladecp, tipo Stack).',
+    'admin.operation.no_due_date' => 'sin vencimiento',
+    'admin.cycle.monthly' => 'Mensual',
+    'admin.cycle.quarterly' => 'Trimestral',
+    'admin.cycle.semiannually' => 'Semestral',
+    'admin.cycle.annually' => 'Anual',
+    'admin.cycle.biennially' => 'Bienal',
+    'admin.cycle.triennially' => 'Trienal',
 ];

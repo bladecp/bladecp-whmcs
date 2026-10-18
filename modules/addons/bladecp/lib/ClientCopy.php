@@ -38,7 +38,7 @@ final class ClientCopy
         }
 
         return match (strtolower(str_replace('_', '-', trim($language)))) {
-            'pt', 'pt-br', 'portuguese', 'portuguese-br' => 'portuguese-br',
+            'pt', 'pt-br', 'pt-pt', 'portuguese', 'portuguese-br', 'portuguese-pt', 'portugues', 'portugues-br' => 'portuguese-br',
             'es', 'es-es', 'es-419', 'spanish' => 'spanish',
             default => 'english',
         };

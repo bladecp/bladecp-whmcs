@@ -470,8 +470,8 @@ final class AdminPage
                 . self::e((string) ($service['productType'] ?? '')) . ' · ' . self::e(I18n::t('admin.common.plan')) . ' '
                 . self::e((string) ($service['planId'] ?? '')) . '</div></td><td>'
                 . self::serviceStatusBadge((string) ($service['status'] ?? 'Unknown')) . '</td><td>'
-                . self::e((string) ($service['createdAt'] ?? '')) . '<div class="bcp-csub">' . self::e(I18n::t('admin.operation.next_due')) . ': '
-                . self::e((string) ($service['nextDueDate'] ?? '')) . '</div></td><td class="bcp-operation-action">' . $detail . '</td></tr>';
+                . self::e((string) ($service['createdAt'] ?? '')) . '<div class="bcp-csub">' . self::e(self::nextDue((string) ($service['nextDueDate'] ?? '')))
+                . '</div></td><td class="bcp-operation-action">' . $detail . '</td></tr>';
         }
         if ($rows === '') {
             $rows = '<tr><td colspan="5" class="bcp-chips-empty">' . self::e(I18n::t('admin.operation.no_services')) . '</td></tr>';
@@ -564,6 +564,15 @@ final class AdminPage
         return '<section class="bcp-operation-section bcp-operation-timeline"><div class="bcp-section-heading"><div><h4>' . self::e($title) . '</h4>'
             . ($service !== null ? '<p>' . self::e((string) ($service['productName'] ?? '')) . ' · ' . self::e((string) ($service['domain'] ?? '')) . '</p>' : '')
             . '</div><a class="btn btn-default" href="' . self::e($base . '&action=operation') . '">' . self::e(I18n::t('admin.operation.close_history')) . '</a></div><ul class="bcp-diagnostic-list">' . $rows . '</ul></section>';
+    }
+
+    /** The next due date of a service, or that it has none (free plans keep 0000-00-00). */
+    private static function nextDue(string $date): string
+    {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/D', $date) !== 1 || $date === '0000-00-00') {
+            return I18n::t('admin.operation.no_due_date');
+        }
+        return I18n::t('admin.operation.next_due') . ': ' . $date;
     }
 
     private static function serviceStatusBadge(string $status): string
@@ -1217,7 +1226,7 @@ final class AdminPage
                 if ($d['changed']) {
                     $anyChange = true;
                 }
-                $rows .= '<tr><td>' . self::e($d['label']) . '</td><td>'
+                $rows .= '<tr><td>' . self::e(I18n::t('admin.cycle.' . $d['cycle'])) . '</td><td>'
                     . ($d['old'] === null
                         ? '<span class="bcp-row-v muted">—</span>'
                         : self::money($d['old'], $m['code']))
@@ -1313,9 +1322,13 @@ final class AdminPage
                 . self::e(I18n::t('admin.prices.empty')) . '</p>');
         }
 
-        // Todas as colunas de ciclo (mesmo sem preço). Ordem/rótulos
-        // = fonte única PriceMap::LABELS (monthly…triennially).
-        $cycles = \WHMCS\Module\Addon\Bladecp\PriceMap::LABELS;
+        // Todas as colunas de ciclo (mesmo sem preço), na ordem de
+        // PriceMap::LABELS (monthly…triennially), com o nome do ciclo no
+        // idioma do administrador.
+        $cycles = [];
+        foreach (array_keys(\WHMCS\Module\Addon\Bladecp\PriceMap::LABELS) as $cycleKey) {
+            $cycles[$cycleKey] = I18n::t('admin.cycle.' . $cycleKey);
+        }
         $nCyc = count($cycles);
 
         // Célula de 1 ciclo: plataforma (alvo) + WHMCS abaixo em

@@ -169,4 +169,11 @@ return [
     'admin.setup.choose_account' => 'Choose account',
     'admin.setup.choose_valid_account' => 'Choose a valid BladeCP account before saving a credential. This prevents creating or changing a different server by mistake.',
     'admin.setup.starter_product_failed' => 'The test product could not be created ({error}). Create it manually in Setup > Products/Services (bladecp module, Stack type).',
+    'admin.operation.no_due_date' => 'no due date',
+    'admin.cycle.monthly' => 'Monthly',
+    'admin.cycle.quarterly' => 'Quarterly',
+    'admin.cycle.semiannually' => 'Semiannual',
+    'admin.cycle.annually' => 'Annual',
+    'admin.cycle.biennially' => 'Biennial',
+    'admin.cycle.triennially' => 'Triennial',
 ];

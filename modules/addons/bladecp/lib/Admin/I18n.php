@@ -31,6 +31,11 @@ final class I18n
         'pt-br' => 'portuguese-br',
         'portuguese' => 'portuguese-br',
         'portuguese-br' => 'portuguese-br',
+        // WHMCS installations name their Portuguese packs differently.
+        'pt-pt' => 'portuguese-br',
+        'portuguese-pt' => 'portuguese-br',
+        'portugues' => 'portuguese-br',
+        'portugues-br' => 'portuguese-br',
         'es' => 'spanish',
         'es-es' => 'spanish',
         'es-419' => 'spanish',
