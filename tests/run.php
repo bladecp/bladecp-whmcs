@@ -137,9 +137,9 @@ check('public package keeps the expected installable module layout', static func
     }
 });
 
-check('public documentation declares three localized READMEs and 21 localized screenshots', static function () use ($root): void {
+check('public documentation declares three localized READMEs and 24 localized screenshots', static function () use ($root): void {
     $languages = ['en', 'pt-BR', 'es'];
-    $views = ['overview', 'configuration', 'plans', 'pricing', 'marketplace', 'operations-diagnostics', 'client-service'];
+    $views = ['overview', 'configuration', 'plans', 'pricing', 'components', 'client-area', 'migrations', 'diagnostics'];
     $screenshots = [];
 
     foreach ($languages as $language) {

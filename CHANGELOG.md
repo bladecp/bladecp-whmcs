@@ -6,6 +6,20 @@ The project follows [Semantic Versioning](https://semver.org/). Versions marked
 as release candidates are pre-release versions and may change before a stable
 release.
 
+## 0.9.0-rc.11
+
+This release candidate refreshes the screenshots of the public documentation.
+
+### Changed
+
+- Each README shows eight current screens of the addon in its own language:
+  overview, configuration, plans, pricing, components, client area, migrations
+  to review and diagnostics. The marketplace, operations and client service
+  captures leave the READMEs.
+- The screenshot contract allows captures from a production WHMCS that runs the
+  module, showing only the addon area and nothing that identifies the
+  installation.
+
 ## 0.9.0-rc.10
 
 This release candidate polishes four administration screens of the addon and

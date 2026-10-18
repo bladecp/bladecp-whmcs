@@ -11,22 +11,22 @@
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/vers%C3%A3o-0.9.0--rc.10-4f46e5?style=flat-square&amp;labelColor=1e1b4b" alt="Versão 0.9.0-rc.10"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/vers%C3%A3o-0.9.0--rc.11-4f46e5?style=flat-square&amp;labelColor=1e1b4b" alt="Versão 0.9.0-rc.11"></a>
   <a href="#requisitos"><img src="https://img.shields.io/badge/PHP-8.1%2B-6366f1?style=flat-square&amp;labelColor=1e1b4b&amp;logo=php&amp;logoColor=white" alt="PHP 8.1 ou superior"></a>
   <a href="#requisitos"><img src="https://img.shields.io/badge/WHMCS-8.x%20%7C%209.x-4f46e5?style=flat-square&amp;labelColor=1e1b4b" alt="WHMCS 8.x e 9.x"></a>
   <a href="#requisitos"><img src="https://img.shields.io/badge/idiomas-EN%20%C2%B7%20PT--BR%20%C2%B7%20ES-7c3aed?style=flat-square&amp;labelColor=1e1b4b" alt="Inglês, português (Brasil) e espanhol"></a><br>
-  <a href="#qualidade"><img src="https://img.shields.io/badge/testes-1.092%20aprovados-8b5cf6?style=flat-square&amp;labelColor=1e1b4b" alt="1.092 verificações automatizadas aprovadas na candidata 0.9.0-rc.10"></a>
+  <a href="#qualidade"><img src="https://img.shields.io/badge/testes-1.092%20aprovados-8b5cf6?style=flat-square&amp;labelColor=1e1b4b" alt="1.092 verificações automatizadas aprovadas na candidata 0.9.0-rc.11"></a>
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/status-pr%C3%A9--release-6d28d9?style=flat-square&amp;labelColor=1e1b4b" alt="Pré-release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licen%C3%A7a-MIT-4338ca?style=flat-square&amp;labelColor=1e1b4b" alt="Licença MIT"></a>
   <a href="https://github.com/bladecp/bladecp-whmcs/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/bladecp/bladecp-whmcs/ci.yml?branch=main&amp;style=flat-square&amp;labelColor=1e1b4b&amp;label=CI%20p%C3%BAblico" alt="Estado do CI público"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.10/bladecp-whmcs-0.9.0-rc.10.zip"><strong>Baixar BladeCP para WHMCS (.zip)</strong></a>
+  <a href="https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.11/bladecp-whmcs-0.9.0-rc.11.zip"><strong>Baixar BladeCP para WHMCS (.zip)</strong></a>
   &nbsp;·&nbsp;
-  <a href="https://github.com/bladecp/bladecp-whmcs/releases/tag/v0.9.0-rc.10">Notas da versão</a>
+  <a href="https://github.com/bladecp/bladecp-whmcs/releases/tag/v0.9.0-rc.11">Notas da versão</a>
   &nbsp;·&nbsp;
-  <a href="https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.10/SHA256SUMS">Checksum SHA-256</a>
+  <a href="https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.11/SHA256SUMS">Checksum SHA-256</a>
 </p>
 
 <p align="center">
@@ -43,7 +43,7 @@
 </p>
 
 > [!IMPORTANT]
-> **Versão candidata `0.9.0-rc.10`.** Esta é uma pré-release para validação de
+> **Versão candidata `0.9.0-rc.11`.** Esta é uma pré-release para validação de
 > parceiros. Teste-a fora de produção antes de disponibilizá-la aos clientes.
 
 BladeCP para WHMCS é o módulo oficial e open source de provisionamento para
@@ -175,7 +175,7 @@ serviços dele.
 
 ## Downloads e notas da versão
 
-**`0.9.0-rc.10`** é a versão candidata atual. Ela limita o pacote ao ambiente
+**`0.9.0-rc.11`** é a versão candidata atual. Ela limita o pacote ao ambiente
 de produção da BladeCP, registra o cron do módulo como requisito de agendamento
 e passa o portão público de higiene para regras genéricas, conforme o
 [changelog](CHANGELOG.md). Toda release
@@ -184,11 +184,11 @@ da versão antes de atualizar.
 
 | Arquivo | Finalidade |
 | --- | --- |
-| [**bladecp-whmcs-0.9.0-rc.10.zip**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.10/bladecp-whmcs-0.9.0-rc.10.zip) | Pacote instalável, contendo somente `modules/` |
-| [**SHA256SUMS**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.10/SHA256SUMS) | Checksum para conferir a integridade do ZIP |
-| [**RELEASE_NOTES.md**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.10/RELEASE_NOTES.md) | Notas que acompanham este pacote |
+| [**bladecp-whmcs-0.9.0-rc.11.zip**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.11/bladecp-whmcs-0.9.0-rc.11.zip) | Pacote instalável, contendo somente `modules/` |
+| [**SHA256SUMS**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.11/SHA256SUMS) | Checksum para conferir a integridade do ZIP |
+| [**RELEASE_NOTES.md**](https://github.com/bladecp/bladecp-whmcs/releases/download/v0.9.0-rc.11/RELEASE_NOTES.md) | Notas que acompanham este pacote |
 
-Consulte a [página desta release](https://github.com/bladecp/bladecp-whmcs/releases/tag/v0.9.0-rc.10)
+Consulte a [página desta release](https://github.com/bladecp/bladecp-whmcs/releases/tag/v0.9.0-rc.11)
 ou [todas as releases do BladeCP para WHMCS](https://github.com/bladecp/bladecp-whmcs/releases).
 Os arquivos automáticos **Source code** do GitHub contêm o repositório; para
 instalar o módulo, use o ZIP indicado na tabela.
@@ -321,24 +321,28 @@ e o cron do módulo.
 ## Veja no WHMCS
 
 <p align="center">
-  <img src="assets/screenshots/pt-BR/overview.jpg" alt="Visão geral do addon BladeCP em uma administração WHMCS em português" width="900">
+  <img src="assets/screenshots/pt-BR/overview.jpg" alt="Aba Visão geral do addon BladeCP no WHMCS: a central de controle com todas as áreas prontas, o servidor em produção e o roteiro recomendado" width="900">
 </p>
 
 | Configuração | Planos e catálogo |
 | --- | --- |
-| <img src="assets/screenshots/pt-BR/configuration.jpg" alt="Configuração BladeCP em uma administração WHMCS em português" width="440"> | <img src="assets/screenshots/pt-BR/plans.jpg" alt="Planos BladeCP e importação de catálogo em uma administração WHMCS em português" width="440"> |
+| <img src="assets/screenshots/pt-BR/configuration.jpg" alt="Aba Configuração: verificações do ambiente e a conexão validada com api.bladecp.com" width="440"> | <img src="assets/screenshots/pt-BR/plans.jpg" alt="Aba Planos: disponibilidade de venda, modo de importação e os planos BladeCP criados como produtos do WHMCS" width="440"> |
 
-| Preços | Marketplace |
+| Preços | Componentes |
 | --- | --- |
-| <img src="assets/screenshots/pt-BR/pricing.jpg" alt="Preços BladeCP em uma administração WHMCS em português" width="440"> | <img src="assets/screenshots/pt-BR/marketplace.jpg" alt="Marketplace BladeCP em uma administração WHMCS em português" width="440"> |
+| <img src="assets/screenshots/pt-BR/pricing.jpg" alt="Aba Preços: cada produto do WHMCS ao lado do preço do plano na plataforma, por ciclo de cobrança" width="440"> | <img src="assets/screenshots/pt-BR/components.jpg" alt="Aba Componentes: o que a sincronização acrescenta, tira e mantém no formulário de pedido" width="440"> |
 
-| Operação e diagnóstico | Serviço contratado na área do cliente |
+| Área de cliente | Migrações para revisar |
 | --- | --- |
-| <img src="assets/screenshots/pt-BR/operations-diagnostics.jpg" alt="Operação e diagnóstico BladeCP em uma administração WHMCS em português" width="440"> | <img src="assets/screenshots/pt-BR/client-service.jpg" alt="Painel de serviço contratado BladeCP em uma área do cliente WHMCS em português usando example.com" width="440"> |
+| <img src="assets/screenshots/pt-BR/client-area.jpg" alt="Aba Área de cliente: Vibe, Fast Deploy, WordPress Toolkit e cobrança do cPanel Migrator por servidor, com a política do Fast Deploy" width="440"> | <img src="assets/screenshots/pt-BR/migrations.jpg" alt="Aba Migrações para revisar: o interruptor de sugestão da revenda, a fila de revisão e as migrações vinculadas" width="440"> |
 
-As capturas mostram o módulo empacotado em um WHMCS demonstrativo, com dados
-neutros como `example.com`. A aparência final também depende do tema e da
-versão do seu WHMCS.
+<p align="center">
+  <img src="assets/screenshots/pt-BR/diagnostics.jpg" alt="Aba Diagnóstico: verificações somente leitura da credencial, da conexão, da URL do receptor, da assinatura, do catálogo, da sincronização programada e dos vínculos dos produtos" width="900">
+</p>
+
+As capturas mostram a área do addon em um WHMCS que roda o módulo, sem dados
+da instalação. A aparência final também depende do tema e da versão do seu
+WHMCS.
 
 <a id="documentacao"></a>
 
@@ -384,7 +388,7 @@ pública.
 
 ## Qualidade e validação
 
-A versão candidata `0.9.0-rc.10` foi validada pelos mantenedores com
+A versão candidata `0.9.0-rc.11` foi validada pelos mantenedores com
 **1.092 verificações automatizadas**: 732 verificações determinísticas de
 mapeamento, roteamento, travas de venda, mascaramento de segredos, catálogo,
 webhooks e fluxos do Vibe, e 360 verificações de integração que exercitam

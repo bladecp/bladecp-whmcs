@@ -27,7 +27,7 @@ for path in "${required[@]}"; do
 done
 
 screenshot_languages=(en pt-BR es)
-screenshot_views=(overview configuration plans pricing marketplace operations-diagnostics client-service)
+screenshot_views=(overview configuration plans pricing components client-area migrations diagnostics)
 expected_screenshots=()
 for language in "${screenshot_languages[@]}"; do
   for view in "${screenshot_views[@]}"; do
@@ -46,7 +46,7 @@ done
 actual_screenshots="$(find assets/screenshots -type f -name '*.jpg' -print | sed 's#^./##' | sort)"
 expected_screenshot_list="$(printf '%s\n' "${expected_screenshots[@]}" | sort)"
 if [ "$actual_screenshots" != "$expected_screenshot_list" ]; then
-  echo "error: the public tree must contain exactly the 21 approved localized screenshots" >&2
+  echo "error: the public tree must contain exactly the 24 approved localized screenshots" >&2
   echo "expected:" >&2
   printf '%s\n' "$expected_screenshot_list" >&2
   echo "actual:" >&2

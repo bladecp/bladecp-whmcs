@@ -1,44 +1,41 @@
 # Public screenshot contract
 
-Only reviewed captures from the packaged module belong in this directory. The
+Only reviewed captures of the BladeCP addon belong in this directory. The
 public documentation has three complete, independently coherent screenshot
 sets: English (`en`), Portuguese for Brazil (`pt-BR`) and Spanish (`es`).
 
-Each language directory contains exactly these seven images:
+Each language directory contains exactly these eight images:
 
 - `overview.jpg`
 - `configuration.jpg`
 - `plans.jpg`
 - `pricing.jpg`
-- `marketplace.jpg`
-- `operations-diagnostics.jpg`
-- `client-service.jpg`
+- `components.jpg`
+- `client-area.jpg`
+- `migrations.jpg`
+- `diagnostics.jpg`
 
-The WHMCS interface and the BladeCP addon must both be in the language of the
-corresponding README. Do not mix an English addon with Portuguese or Spanish
-WHMCS chrome, and do not mix currencies, labels or navigation from another
-locale in the same capture.
+Each image shows the addon area only, cut below the WHMCS header, in the
+language of the corresponding README. Do not mix an English addon with
+Portuguese or Spanish labels, and do not reuse one language image as another
+language.
 
-Capture only the packaged public module installed in a controlled demonstration
-or disposable WHMCS environment. All public docs and images use
-`api.bladecp.com` only. Do not
-show an alternate API host, development environment, real customer details,
-email addresses, people, company names, service IDs, IP addresses, API keys,
-webhook secrets, ticket identifiers, financial records or unreleased details.
+Captures may come from a demonstration WHMCS or from a production WHMCS that
+runs the module, as long as nothing in the image identifies the installation.
+All public docs and images use `api.bladecp.com` only. Do not show the WHMCS
+header or brand of the installation, an alternate API host, a development
+environment, real customer details, email addresses, people, company names,
+domains or paths of the installation, IP addresses, API keys, webhook
+secrets, endpoint identifiers, ticket identifiers, business volumes,
+financial records or unreleased details.
 
-Use neutral demonstration data consistently. The `client-service.jpg` capture
-must show the contracted-service addon panel with the service domain set to
-`example.com`, never a subdomain or a real organization domain. Do not show a
-maintainer name, a third-party brand, the unpublished API host, or a
-non-production environment label in any capture.
+Prefer screens that need no change. When a screen shows an address, a path or
+an identifier of the installation, either leave that screen out or replace
+the value with a documentation example (`example.com`, `/home/example`) in the
+page before capturing. Never invent a state, a count or a result, and never
+edit text inside the bitmap.
 
 Before release, review every image at original resolution. This visual privacy
 and language-coherence review is a mandatory manual gate. Automated checks can
 validate filenames and JPEG structure, but they cannot reliably validate the
-visible text, translated WHMCS chrome, or privacy of a screenshot.
-
-Capture the real localized interface and real neutral demonstration fixtures.
-Do not edit text inside the bitmap, replace labels in the DOM for the capture,
-or reuse one language image as another language. The client-service fixture
-must exist as a separate demonstration service so its `example.com` domain is
-consistent in both WHMCS and the BladeCP service response.
+visible text or the privacy of a screenshot.

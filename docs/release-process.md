@@ -7,9 +7,9 @@ publish it.
 ## The three steps
 
 ```sh
-./scripts/public-release.sh prepare 0.9.0-rc.10
-./scripts/public-release.sh stage-github 0.9.0-rc.10 --public-base <clean-public-main-checkout>
-./scripts/public-release.sh publish 0.9.0-rc.10 --confirm-publication v0.9.0-rc.10
+./scripts/public-release.sh prepare 0.9.0-rc.11
+./scripts/public-release.sh stage-github 0.9.0-rc.11 --public-base <clean-public-main-checkout>
+./scripts/public-release.sh publish 0.9.0-rc.11 --confirm-publication v0.9.0-rc.11
 ```
 
 `prepare` runs the release gates and creates the reviewed artifact directory.
@@ -19,7 +19,7 @@ publishes files.
 
 `publish` is intentionally separate. It requires the exact version confirmation and an additional maintainer-controlled safety lock. It validates the staged commit, tag, checksum and approved GitHub destination before it can perform an external write. It never force-pushes.
 
-Publish `v0.9.0-rc.10` as a pre-release based on the existing public `main`
+Publish `v0.9.0-rc.11` as a pre-release based on the existing public `main`
 history. Do not describe it as a stable version until the planned partner
 validation period is complete.
 
@@ -35,7 +35,7 @@ Every public release includes:
 - public documentation, templates and tested automation.
 
 The released ZIP is validated from the artifact itself in disposable WHMCS
-installations. For `v0.9.0-rc.10`, validate it with WHMCS 8.13.3 and WHMCS
+installations. For `v0.9.0-rc.11`, validate it with WHMCS 8.13.3 and WHMCS
 9.0.6. Source-tree tests are useful, but they do not replace this
 artifact-only validation.
 
